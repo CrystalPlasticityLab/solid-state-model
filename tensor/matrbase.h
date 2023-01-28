@@ -54,21 +54,24 @@ public:
 		return *this;
 	}
 
-	inline  matrix_base  operator + (const matrix_base& m) const;
-	inline  matrix_base  operator - (const matrix_base& m) const;
-	inline  matrix_base  operator * (const matrix_base& m) const;
-	inline  matrix_base  operator * (const T& val) const;
-	inline  matrix_base& operator +=(const matrix_base& m);
-	inline  matrix_base& operator -=(const matrix_base& m);
-	inline  matrix_base& operator *=(const matrix_base& m);
-	inline  matrix_base& operator *=(const T& val);
+	inline  bool         operator==(const matrix_base& m) const;
+	inline  matrix_base  operator+ (const matrix_base& m) const;
+	inline  matrix_base  operator- (const matrix_base& m) const;
+	inline  matrix_base  operator* (const matrix_base& m) const;
+	inline  matrix_base  operator* (const T& val) const;
+	inline  matrix_base& operator+=(const matrix_base& m);
+	inline  matrix_base& operator-=(const matrix_base& m);
+	inline  matrix_base& operator*=(const matrix_base& m);
+	inline  matrix_base& operator*=(const T& val);
 
+	virtual inline T   norm() const;
 	bool        check_ort() const;
 	inline matrix_base transpose() const;
 	inline matrix_base scal(TRANSPOSE left, const matrix_base& rhs, TRANSPOSE right) const;
 	inline matrix_base transform(TRANSPOSE left, const matrix_base& op, TRANSPOSE right) const;
 	inline  T   convolution(const matrix_base<T, N>& rhs) const;
 };
+
 
 namespace matrix_generator
 {
@@ -118,6 +121,12 @@ matrix_base<T, N> matrix_base<T, N>::transpose() const {
 	return res;
 }
 
+
+template<typename T, size_t N>
+inline T    matrix_base<T, N >::norm() const {
+	return sqrt(this->convolution(*this));
+}
+
 template<typename T, size_t N>
 bool matrix_base<T, N >::check_ort() const {
 	matrix_base<T, N> m = *this * this->transpose();
@@ -152,6 +161,15 @@ matrix_base<T, N> matrix_base<T, N>::transform(TRANSPOSE left, const matrix_base
 		if (left == TRANSPOSE::FALSE)	return op * (*this) * opt;
 		else                			return opt * (*this) * op;
 	}
+}
+
+template<typename T, std::size_t N>
+bool matrix_base<T, N>::operator==(const matrix_base<T, N>& rhs) const {
+	const matrix_base<T, N> diff = rhs - this;
+	if (diff.convolution(diff) > 1e-14) {
+		return false;
+	}
+	return true;
 }
 
 template<typename T, std::size_t N>

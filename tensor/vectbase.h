@@ -39,6 +39,7 @@ public:
 	inline vect_base  operator* (const T& mult) const;
 	inline vect_base  operator/ (const T& div) const;
 	inline vect_base& operator= (const T& val);
+	inline bool       operator==(const T& val) const;
 	inline vect_base& operator/=(const T& div);
 	inline vect_base& operator*=(const T& mult);
 	inline vect_base& operator+=(const vect_base& rhs);
@@ -131,6 +132,15 @@ template<typename T, size_t N>
 inline vect_base<T, N>& vect_base<T, N>::operator = (const T& val) {
 	fill(val);
 	return (*this);
+}
+
+template<typename T, size_t N>
+inline bool vect_base<T, N>::operator == (const T& val) const {
+	const vect_base<T, N> diff = val - this;
+	if (diff.norm() > 1e-14) {
+		return false;
+	}
+	return true;
 }
 
 template<typename T, size_t N>

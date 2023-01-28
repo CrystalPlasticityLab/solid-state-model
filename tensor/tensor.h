@@ -19,13 +19,14 @@ public:
 	virtual void      change_basis     (const _handler& m) override;
 	matrix_base<T, N> get_comp_at_basis(const _handler& m) const; // calc comp of this at basis
 	Tensor(const _matrix& comp, const _handler& basis) : _matrix(comp), _handler(basis) {};
-	Tensor(const _matrix& comp, const   Tensor& basis) : _matrix(comp), _handler(basis) {};
-	explicit Tensor(const  Tensor&  tens) : _matrix(tens), _handler(tens) {}; // copy constructor
+	Tensor(const _matrix& comp, const   Tensor& basis) : _matrix(comp), _handler(static_cast<const _handler&>(basis)) {};
+	explicit Tensor(const  Tensor&  tens) : _matrix(tens), _handler(static_cast<const _handler&>(tens)) {}; // copy constructor
 	Tensor(Tensor&& tens) noexcept : _matrix(static_cast<_matrix&&>(tens)), _handler(static_cast<_handler&&>(tens)) {}; // move constructor
 
 	friend std::ostream& operator<< <>(std::ostream& out, const Tensor& t);
 	Tensor& operator = (const Tensor& t);
 	Tensor& operator = (Tensor&& t) noexcept;
+	bool    operator== (const Tensor& t) const;
 	Tensor  operator + (const Tensor& t) const;
 	Tensor  operator - (const Tensor& t) const;
 	Tensor  operator * (const Tensor& t) const;
@@ -41,6 +42,15 @@ public:
 	friend Vector<T, N>  operator * (const Vector<T, N>& v, const Tensor& t) {
 		return Vector<T, N>(static_cast<matrix_base<T, N>>(t) * v.comp_at_basis(t.get_basis()), t.get_basis()); }
 };
+
+template<typename T, std::size_t N>
+bool Tensor<T, N>::operator==(const Tensor<T, N>& rhs) const {
+	const Tensor<T, N> diff = rhs - this;
+	if (diff.convolution(diff) > 1e-14) {
+		return false;
+	}
+	return true;
+}
 
 template<typename T, size_t N>
 void Tensor<T, N>::change_basis(const _handler& m) {
