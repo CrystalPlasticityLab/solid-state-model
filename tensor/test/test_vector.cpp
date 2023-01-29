@@ -1,5 +1,3 @@
-#include "../vectbase.h"
-#include "expect.h"
 #include "test_vector.h"
 
 void test_vector(){
@@ -97,6 +95,9 @@ void test_vector(){
         pass_tests += expect(sqrt(vr*vr)==vr.norm(), "v.v = |v|^2");
         all_tests++;
     }
+
+    // TODO: check copy and move ctors and operators =
+
     {
         auto vl = vect_base<double, 3>(std::array<double, 3>{123.123,7.234,-45.2356});
         auto vr = vect_base<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
@@ -143,10 +144,6 @@ void test_vector(){
         }
     }
     
-    std::cout << " Test passed :" << std::to_string(pass_tests) << "/" << std::to_string(all_tests) << std::endl;
+    std::cout << " Test passed : " << std::to_string(pass_tests) << "/" << std::to_string(all_tests) << std::endl;
     std::cout << " ==================== End Testing vect_base ====================" << std::endl;
-}
-
-void run_test(){
-    test_vector();
 }

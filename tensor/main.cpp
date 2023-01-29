@@ -1,5 +1,5 @@
 #include "test/expect.h"
-#include "test/test_vector.h"
+#include "test/test.h"
 #include "vect.h"
 #include "tensor.h"
 #include "quat.h"
@@ -152,6 +152,7 @@ void vector_unit_test()
 }
 int main()
 {
+	is_small_value(1e-10);
 	run_test();
 	//expect(true, "this is good expext message");
 	//expect(false, "this is bad expext message");

@@ -12,7 +12,6 @@ enum class TRANSPOSE
 	TRUE,
 	FALSE
 };
-template<typename T> bool is_small_value(T value);
 
 extern std::random_device rd;  // Will be used to obtain a seed for the random number engine
 extern std::mt19937 gen;       // Standard mersenne_twister_engine seeded with rd()
@@ -54,6 +53,7 @@ public:
 		return *this;
 	}
 
+	inline  matrix_base  operator- () const;
 	inline  bool         operator==(const matrix_base& m) const;
 	inline  matrix_base  operator+ (const matrix_base& m) const;
 	inline  matrix_base  operator- (const matrix_base& m) const;
@@ -63,6 +63,7 @@ public:
 	inline  matrix_base& operator-=(const matrix_base& m);
 	inline  matrix_base& operator*=(const matrix_base& m);
 	inline  matrix_base& operator*=(const T& val);
+	inline  matrix_base& operator/=(const T& val);
 
 	virtual inline T   norm() const;
 	bool        check_ort() const;
@@ -162,14 +163,22 @@ matrix_base<T, N> matrix_base<T, N>::transform(TRANSPOSE left, const matrix_base
 		else                			return opt * (*this) * op;
 	}
 }
+template<typename T, size_t N>
+inline matrix_base<T, N> matrix_base<T,N>::operator- () const {
+	matrix_base<T, N> res;
+	for (size_t row = 0; row < N; row++)
+		for (size_t col = 0; col < N; col++)
+			res[row][col] = -(*this)[row][col];
+	return res;
+};
 
 template<typename T, std::size_t N>
 bool matrix_base<T, N>::operator==(const matrix_base<T, N>& rhs) const {
-	const matrix_base<T, N> diff = rhs - this;
-	if (diff.convolution(diff) > 1e-14) {
-		return false;
+	const matrix_base<T, N> diff = rhs - *this;
+	if ( is_small_value(diff.convolution(diff))) {
+		return true;
 	}
-	return true;
+	return false;
 }
 
 template<typename T, std::size_t N>
@@ -240,6 +249,15 @@ matrix_base<T, N>& matrix_base<T, N>::operator *=(const T& val)  {
 	for (size_t row = 0; row < N; row++)
 		for (size_t col = 0; col < N; col++)
 			(*this)[row][col] *= val;
+	return *this;
+}
+
+template<typename T, std::size_t N>
+matrix_base<T, N>& matrix_base<T, N>::operator /=(const T& val)  {
+	const double inv = 1.0/val;
+	for (size_t row = 0; row < N; row++)
+		for (size_t col = 0; col < N; col++)
+			(*this)[row][col] *= inv;
 	return *this;
 }
 

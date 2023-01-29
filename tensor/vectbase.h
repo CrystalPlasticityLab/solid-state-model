@@ -146,10 +146,10 @@ inline vect_base<T, N>& vect_base<T, N>::operator = (const T& val) {
 template<typename T, size_t N>
 inline bool vect_base<T, N>::operator == (const vect_base<T, N>& val) const {
 	const vect_base<T, N> diff = val - *this;
-	if (diff.norm() > 1e-13) {
-		return false;
+	if (is_small_value(diff.norm())) {
+		return true;
 	}
-	return true;
+	return false;
 }
 
 template<typename T, size_t N>

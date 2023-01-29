@@ -1,2 +1,5 @@
+#include "../vectbase.h"
+#include "expect.h"
+#include "test.h"
 
-void run_test();
+void test_vector();
