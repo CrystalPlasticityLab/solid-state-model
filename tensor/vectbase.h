@@ -15,7 +15,7 @@ protected:
 public:
 	~vect_base() { };
 	explicit vect_base(T val)                 : _cont()  { this->_Elem->fill(val); };
-	explicit vect_base(const _array& _arr)    : _cont(static_cast<const _cont&>(_arr)) { };
+	explicit vect_base(const _array &_arr)    : _cont(static_cast<const _array&>(_arr)) { };
 	explicit vect_base(const vect_base&  v)   : _cont(static_cast<const _cont& >(v))   { }; // copy constructor
 	vect_base(vect_base&& v)noexcept : _cont(static_cast<_cont&&>(v))         { }; // move constructor
 
@@ -39,7 +39,7 @@ public:
 	inline vect_base  operator* (const T& mult) const;
 	inline vect_base  operator/ (const T& div) const;
 	inline vect_base& operator= (const T& val);
-	inline bool       operator==(const T& val) const;
+	inline bool       operator==(const vect_base& val) const;
 	inline vect_base& operator/=(const T& div);
 	inline vect_base& operator*=(const T& mult);
 	inline vect_base& operator+=(const vect_base& rhs);
@@ -47,6 +47,15 @@ public:
 
 	//static inline vect_base   vector_product(const vect_base& lrhs, const vect_base& rhs);
 	inline matrix_base<T, N>  outer_product(const vect_base& rhs) const;
+
+	friend vect_base<T, N> vector_product(const vect_base<T, N>& lhs, const vect_base<T, N>& rhs) {
+		static_assert(N == 3 && " vector_product is implemented only for 3-dimensional vectors.");
+		vect_base<T, N> comp;
+		comp[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
+		comp[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
+		comp[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
+		return comp;
+	}
 
 	virtual inline T   norm() const;
 	inline vect_base   get_normalize() const;
@@ -135,9 +144,9 @@ inline vect_base<T, N>& vect_base<T, N>::operator = (const T& val) {
 }
 
 template<typename T, size_t N>
-inline bool vect_base<T, N>::operator == (const T& val) const {
-	const vect_base<T, N> diff = val - this;
-	if (diff.norm() > 1e-14) {
+inline bool vect_base<T, N>::operator == (const vect_base<T, N>& val) const {
+	const vect_base<T, N> diff = val - *this;
+	if (diff.norm() > 1e-13) {
 		return false;
 	}
 	return true;

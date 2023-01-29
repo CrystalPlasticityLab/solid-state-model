@@ -12,6 +12,8 @@
                 "-std=c++17",
                 "-fpermissive",
                 "./tensor/matrix.cpp",
+                "./tensor/test/expect.cpp",
+                "./tensor/test/test_vector.cpp",
                 "./tensor/main.cpp"
             ],
             "group": "build",

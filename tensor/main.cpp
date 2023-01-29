@@ -1,5 +1,5 @@
-//#include "tensor.h"
-
+#include "test/expect.h"
+#include "test/test_vector.h"
 #include "vect.h"
 #include "tensor.h"
 #include "quat.h"
@@ -152,10 +152,14 @@ void vector_unit_test()
 }
 int main()
 {
-	tens_vect_unit_test();
-	vector_unit_test();
-	tensor_unit_test();
-	matrix_unit_test();
+	run_test();
+	//expect(true, "this is good expext message");
+	//expect(false, "this is bad expext message");
+	return 0;
+	//tens_vect_unit_test();
+	//vector_unit_test();
+	//tensor_unit_test();
+	//matrix_unit_test();
 
 	return 0;
 }
