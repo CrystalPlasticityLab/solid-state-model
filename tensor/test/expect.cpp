@@ -1,4 +1,3 @@
-#pragma once
 #include "expect.h"
 int expect(bool expr, std::string msg) {
     if (expr){

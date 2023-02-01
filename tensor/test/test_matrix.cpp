@@ -1,12 +1,14 @@
-#include "test_matr.h"
+#include "test.h"
 
 void test_matr(){
+    using namespace tens;
+
     std::cout << " =================== Start testing matr_base ===================" << std::endl;
     int all_tests = 0;
     int pass_tests = 0;
-    auto m_zero = matrix_base<double, 3>(MATRIXINITTYPE::ZERO);
-    auto m_indent = matrix_base<double, 3>(MATRIXINITTYPE::INDENT);
-	auto m_rand = matrix_base<double, 3>(matrix_generator::generate_rand<double, 3>());
+    auto m_zero = matrix<double, 3>(MATRIXINITTYPE::ZERO);
+    auto m_indent = matrix<double, 3>(MATRIXINITTYPE::INDENT);
+	auto m_rand = matrix<double, 3>(generate_rand<double, 3>());
     
     {
         pass_tests += expect((m_indent==m_indent), "I = I");
@@ -58,14 +60,14 @@ void test_matr(){
         std::array<double, 3>{0.854559, 0.518604, -0.0279043},
         std::array<double, 3>{-0.144908, 0.186496, -0.97171}  };
     {
-        auto ml = matrix_base<double, 3>(m1);
-        auto mr = matrix_base<double, 3>(m2);
+        auto ml = matrix<double, 3>(m1);
+        auto mr = matrix<double, 3>(m2);
         auto ml_add_mr = std::array<std::array<double, 3>, 3>{
                          std::array<double, 3>{-0.285876, 0.468311, 1.14042}, 
                          std::array<double, 3>{1.831629,  0.5932865, -0.2272963}, 
                          std::array<double, 3>{-0.13956177,  1.114063, -0.598092}};
         {
-            pass_tests += expect((ml+mr==matrix_base<double, 3>(ml_add_mr)), "M1+M2 check");
+            pass_tests += expect((ml+mr==matrix<double, 3>(ml_add_mr)), "M1+M2 check");
             all_tests++;
         }
         auto ml_sub_mr = std::array<std::array<double, 3>, 3>{
@@ -73,11 +75,11 @@ void test_matr(){
                          std::array<double, 3>{0.122511, -0.4439215, -0.1714877}, 
                          std::array<double, 3>{0.15025423, 0.741071, 1.345328}};
         {
-            pass_tests += expect((ml-mr==matrix_base<double, 3>(ml_sub_mr)), "M1-M2 check");
+            pass_tests += expect((ml-mr==matrix<double, 3>(ml_sub_mr)), "M1-M2 check");
             all_tests++;
         }
         {
-            pass_tests += expect((mr-ml==-matrix_base<double, 3>(ml_sub_mr)), "M1-M2 = -(M2-M1)");
+            pass_tests += expect((mr-ml==-matrix<double, 3>(ml_sub_mr)), "M1-M2 = -(M2-M1)");
             all_tests++;
         }
         {
@@ -93,11 +95,11 @@ void test_matr(){
                          std::array<double, 3>{0.6884578197422109, -0.3000210420111, 0.6603122514565999},
                          std::array<double, 3>{0.1461807039507, -0.834344859814, -0.5315060245959999}};
         {
-            pass_tests += expect((ml*mr==matrix_base<double, 3>(ml_mul_mr)), "M1.M2 check");
+            pass_tests += expect((ml*mr==matrix<double, 3>(ml_mul_mr)), "M1.M2 check");
             all_tests++;
         }
         {
-            pass_tests += expect((mr*ml==matrix_base<double, 3>(mr_mul_ml)), "M2.M1 check");
+            pass_tests += expect((mr*ml==matrix<double, 3>(mr_mul_ml)), "M2.M1 check");
             all_tests++;
         }
         {
@@ -105,18 +107,18 @@ void test_matr(){
             all_tests++;
         }
         {
-            pass_tests += expect((mr.transpose()*ml.transpose()==matrix_base<double, 3>(ml_mul_mr).transpose()), "M2t.M1t = (M1.M2)t");
+            pass_tests += expect((mr.transpose()*ml.transpose()==matrix<double, 3>(ml_mul_mr).transpose()), "M2t.M1t = (M1.M2)t");
             all_tests++;
         }
         {
-            pass_tests += expect(((mr.transpose()*ml.transpose()).transpose()==matrix_base<double, 3>(ml_mul_mr)), "(M2t.M1t)t = M1.M2");
+            pass_tests += expect(((mr.transpose()*ml.transpose()).transpose()==matrix<double, 3>(ml_mul_mr)), "(M2t.M1t)t = M1.M2");
             all_tests++;
         }
         {
             pass_tests += expect(!ml.check_ort(), "M rand is not orthohonal");
             all_tests++;
         }
-	    auto m_rand_ort = matrix_base<double, 3>(matrix_generator::generate_rand_ort<double, 3>());{
+	    auto m_rand_ort = matrix<double, 3>(generate_rand_ort<double, 3>());{
             pass_tests += expect(m_rand_ort.check_ort(), "M ort is orthohonal");
             all_tests++;
         }

@@ -13,7 +13,10 @@
                 "-fpermissive",
                 "./tensor/matrix.cpp",
                 "./tensor/test/expect.cpp",
+                "./tensor/test/test_array.cpp",
+                "./tensor/test/test_matrix.cpp",
                 "./tensor/test/test_vector.cpp",
+                "./tensor/test/test.cpp",
                 "./tensor/main.cpp"
             ],
             "group": "build",

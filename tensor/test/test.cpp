@@ -1,7 +1,7 @@
-#include "test_vector.h"
-#include "test_matr.h"
+#include "test.h"
 
 void run_test(){
+   // test_array();
+   // test_matr();
     test_vector();
-    test_matr();
 }

@@ -1,6 +1,6 @@
 #include "test/expect.h"
 #include "test/test.h"
-#include "vect.h"
+#include "vector.h"
 #include "tensor.h"
 #include "quat.h"
 
@@ -57,37 +57,37 @@ void matrix_unit_test()
 }
 void tensor_unit_test()
 {
-	auto M1 = matrix_base<double, DIM>(MATRIXINITTYPE::INDENT);
-	auto M2 = matrix_base<double, DIM>(MATRIXINITTYPE::INDENT);
+	auto M1 = tens::matrix<double, DIM>(tens::MATRIXINITTYPE::INDENT);
+	auto M2 = tens::matrix<double, DIM>(tens::MATRIXINITTYPE::INDENT);
 	M1 = std::move(M2);
 	std::vector<std::vector<double>> V1(10);
 	std::vector<std::vector<double>> V2(20);
 	V1 = std::move(V2);
 
 	//q1.vector_product(q2);
-	auto mm = matrix_base<double, DIM>(MATRIXINITTYPE::INDENT);
-	shared_handler_basis<double, DIM> rr(mm);
+	auto mm = tens::matrix<double, DIM>(tens::MATRIXINITTYPE::INDENT);
+	tens::shared_handler_basis<double, DIM> rr(mm);
 	//typedef std::shared_ptr<> shared_handler;
 	std::shared_ptr<double> xx = std::make_shared<double>();
-	matrix_base<double, DIM>* R = new matrix_base<double, DIM>(matrix_generator::generate_rand_ort<double, DIM>());
-	shared_handler_basis<double, DIM> MM0(*R);
+	tens::matrix<double, DIM>* R = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
+	tens::shared_handler_basis<double, DIM> MM0(*R);
 	for (size_t i = 0; i < 10000000; i++)
 	{
-		matrix_base<double, DIM>* R = new matrix_base<double, DIM>(matrix_generator::generate_rand_ort<double, DIM>());
-		matrix_base<double, DIM>* Q = new matrix_base<double, DIM>(matrix_generator::generate_rand_ort<double, DIM>());
-		matrix_base<double, DIM>* P = new matrix_base<double, DIM>(matrix_generator::generate_rand_ort<double, DIM>());
-		auto sm1 = new shared_handler_basis<double, DIM>(*R); 
-		auto sm2 = new shared_handler_basis<double, DIM>(*Q); 
-		auto sm3 = new shared_handler_basis<double, DIM>(*P); 
-		Tensor<double, DIM>* t0 = new Tensor<double, DIM>(*Q, *sm1); bool ort = sm1->as_matrix().check_ort();
-		Tensor<double, DIM>* t1 = new Tensor<double, DIM>(*P, *sm2);  ort = sm2->as_matrix().check_ort();
+		tens::matrix<double, DIM>* R = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
+		tens::matrix<double, DIM>* Q = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
+		tens::matrix<double, DIM>* P = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
+		auto sm1 = new tens::shared_handler_basis<double, DIM>(*R); 
+		auto sm2 = new tens::shared_handler_basis<double, DIM>(*Q); 
+		auto sm3 = new tens::shared_handler_basis<double, DIM>(*P); 
+		tens::Tensor<double, DIM>* t0 = new tens::Tensor<double, DIM>(*Q, *sm1); bool ort = sm1->as_matrix().check_ort();
+		tens::Tensor<double, DIM>* t1 = new tens::Tensor<double, DIM>(*P, *sm2);  ort = sm2->as_matrix().check_ort();
 		delete R;
 		delete Q;
-		Tensor<double, DIM> t4(std::move(*t1)); delete t1;
-		t1 = new Tensor<double, DIM>(*P, *sm2);
+		tens::Tensor<double, DIM> t4(std::move(*t1)); delete t1;
+		t1 = new tens::Tensor<double, DIM>(*P, *sm2);
 		delete P;
 
-		Tensor<double, DIM> t3(*t0);
+		tens::Tensor<double, DIM> t3(*t0);
 		*t0 =  t4;
 		*t1 = t4 + *t0;
 		t4 -= *t1;
@@ -105,61 +105,61 @@ void tensor_unit_test()
 
 void tens_vect_unit_test()
 {
-	matrix_base<double, DIM>* R = new matrix_base<double, DIM>(matrix_generator::generate_rand_ort<double, DIM>());
-	auto sm1 = new  shared_handler_basis<double, DIM>(*R);
+	tens::matrix<double, DIM>* R = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
+	auto sm1 = new  tens::shared_handler_basis<double, DIM>(*R);
 
-	vect_base<double, DIM> v0(0.0);
+	tens::array<double, DIM> v0(0.0);
 	v0[0] = 1.0;
 	v0[1] = 1.5;
 	v0[2] = -0.5;
-	Vector<double, 3> V0(v0, *sm1);
-	Vector<double, 3> V1(v0, *sm1);
-	Vector<double, 3> V3 = V0 + V1;
-	Tensor<double, DIM>* t0 = new Tensor<double, DIM>(*R, *sm1);
-	Tensor<double, DIM>* t1 = new Tensor<double, DIM>(*R, *sm1);
-	Tensor<double, DIM>  t2 = outer_product(V0, V3); std::cout << t2;
-	Tensor<double, DIM>  t3 = outer_product(V3, V0); std::cout << t3;
+	tens::Vector<double, 3> V0(v0, *sm1);
+	tens::Vector<double, 3> V1(v0, *sm1);
+	tens::Vector<double, 3> V3 = V0 + V1;
+	tens::Tensor<double, DIM>* t0 = new tens::Tensor<double, DIM>(*R, *sm1);
+	tens::Tensor<double, DIM>* t1 = new tens::Tensor<double, DIM>(*R, *sm1);
+	tens::Tensor<double, DIM>  t2 = tens::outer_product(V0, V3); std::cout << t2;
+	tens::Tensor<double, DIM>  t3 = tens::outer_product(V3, V0); std::cout << t3;
 }
 
 void vector_unit_test()
 {
-	matrix_base<double, DIM>* R1 = new matrix_base<double, DIM>(matrix_generator::generate_rand_ort<double, DIM>());
-	matrix_base<double, DIM>* R2 = new matrix_base<double, DIM>(matrix_generator::generate_rand_ort<double, DIM>());
-	auto sm1 = new  shared_handler_basis<double, DIM>(*R1);
-	auto sm2 = new  shared_handler_basis<double, DIM>(*R2);
+	tens::matrix<double, DIM>* R1 = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
+	tens::matrix<double, DIM>* R2 = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
+	auto sm1 = new  tens::shared_handler_basis<double, DIM>(tens::generate_rand_ort<double, DIM>());
+	auto sm2 = new  tens::shared_handler_basis<double, DIM>(*R2);
 	delete R1;
 	delete R2;
-	vect_base<double, DIM> v0(0.0);
+	tens::array<double, DIM> v0(0.0);
 	v0[0] = 1.0;
 	v0[1] = 1.5;
 	v0[2] = -0.5;
-	Vector<double, 3> V0(v0, *sm1);
-	Vector<double, 3> V1(v0, *sm2);
+	tens::Vector<double, 3> V0(v0, *sm1);
+	tens::Vector<double, 3> V1(v0, *sm2);
 	{
-		Vector<double, 3> V3 = V0 + V1;
-		Vector<double, 3> V4 = V0 - V1;
+		tens::Vector<double, 3> V3 = V0 + V1;
+		tens::Vector<double, 3> V4 = V0 - V1;
 		auto V5 = V0 * V1;
 	}
-	Vector<double, 3> V3 = std::move(V0);
+	tens::Vector<double, 3> V3 = std::move(V0);
 	//V3 = std::move(V1);
 	delete sm1;
 	std::cout << V3 << " " << V1;
 	//Vector<double, DIM>  V4 = vector_product(V3, V1);
 	std::cout << vector_product(V3, V1);
-	//vect_base<double, 40> VV(0.0);
+	//tens::array<double, 40> VV(0.0);
 	//VV.normalize();
 	return;
 }
 int main()
 {
-	is_small_value(1e-10);
+	tens::is_small_value(1e-10);
 	run_test();
 	//expect(true, "this is good expext message");
 	//expect(false, "this is bad expext message");
 	return 0;
 	//tens_vect_unit_test();
 	//vector_unit_test();
-	//tensor_unit_test();
+	//tens::Tensor_unit_test();
 	//matrix_unit_test();
 
 	return 0;
