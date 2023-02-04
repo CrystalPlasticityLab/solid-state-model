@@ -17,10 +17,10 @@ namespace tens {
 		~array() { };
 		explicit array(T val)                 : _cont()  { this->_Elem->fill(val); };
 		explicit array(const _array &_arr)    : _cont(static_cast<const _array&>(_arr)) { };
-		explicit array(const array&  v)   : _cont(static_cast<const _cont& >(v))   { }; // copy constructor
+		explicit array(const array&  v)       : _cont(static_cast<const _cont& >(v))   { }; // copy constructor
 		array(array&& v)noexcept : _cont(static_cast<_cont&&>(v))         { }; // move constructor
 
-			T& operator [](size_t i)          { return (*this->_Elem)[i]; };
+			  T& operator [](size_t i)          { return (*this->_Elem)[i]; };
 		const T& operator [](size_t i) const    { return (*this->_Elem)[i]; };
 
 		friend std::ostream& operator<< <>(std::ostream& out, const array& a);
@@ -36,20 +36,19 @@ namespace tens {
 		inline array  operator- () const;
 		inline array  operator+ (const array& rhs) const;
 		inline array  operator- (const array& rhs) const;
-		inline         T  operator* (const array& v) const;
+		inline     T  operator* (const array& v) const;
 		inline array  operator* (const T& mult) const;
 		inline array  operator/ (const T& div) const;
 		inline array& operator= (const T& val);
-		inline bool       operator==(const array& val) const;
+		inline bool   operator==(const array& val) const;
 		inline array& operator/=(const T& div);
 		inline array& operator*=(const T& mult);
 		inline array& operator+=(const array& rhs);
 		inline array& operator-=(const array& rhs);
 
-		//static inline array   vector_product(const array& lrhs, const array& rhs);
 		inline matrix<T, N>  outer_product(const array& rhs) const;
 
-		friend array<T, N> vector_product(const array<T, N>& lhs, const array<T, N>& rhs) {
+		friend array<T, N> array_vector_product(const array<T, N>& lhs, const array<T, N>& rhs) {
 			static_assert(N == 3 && " vector_product is implemented only for 3-dimensional vectors.");
 			array<T, N> comp;
 			comp[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
@@ -60,8 +59,8 @@ namespace tens {
 
 		virtual inline T   norm() const;
 		inline array   get_normalize() const;
-		inline void        normalize();
-		inline static void normalize(array&);
+		inline virtual void normalize();
+		inline static  void normalize(array&);
 
 		friend array<T, N > operator* (const array<T, N >& v, const matrix<T, N >& m) {
 			array <T, N> res((T)0);
@@ -219,7 +218,9 @@ namespace tens {
 	template<typename T, size_t N>
 	inline void array<T, N>::normalize(array<T, N>& v) {
 		T length = v.norm();
-		assert(length > (T)0 && "length of vector is zero");
+		if (is_small_value(length)){
+			throw ErrorMath::DivisionByZero();
+		}
 		v *= (T)1 / length;
 	}
 

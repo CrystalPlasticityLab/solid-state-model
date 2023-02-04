@@ -10,7 +10,7 @@ namespace tens {
 		static const shared_handler_basis<T, N> GLOBAL_DEFAULT_BASIS;
 		bool owner = false;
 	protected:
-		shared_handler_basis(const shared_handler_basis&  sh) : _shared(sh) {}; // to prevent multiply owning out of scope of Vector/Tensor
+		shared_handler_basis(const shared_handler_basis&  sh) : _shared(sh) {}; // to prevent multiply owning out of scope of vector/Tensor
 		shared_handler_basis(shared_handler_basis&& sh) noexcept  { move(static_cast<shared_handler_basis&&>(sh)); };
 		shared_handler_basis& operator = (const shared_handler_basis& sh) { _shared::operator=(sh); return *this; };
 		shared_handler_basis& operator = (shared_handler_basis&& sh) noexcept { return move(static_cast<shared_handler_basis&&>(sh));};
@@ -21,19 +21,22 @@ namespace tens {
 			return *this;
 		};
 		const void     set_basis(const shared_handler_basis& rhs) { *this = (rhs); }
+
 	public:
+		bool check_ort_basis() const {
+			return this->get()->check_ort();
+		}
+
 		explicit shared_handler_basis(const matrix<T, N>& m) : _shared(std::make_shared<matrix<T, N>>(m)) {
-			assert(m.check_ort() && " basis matrix is not ortogonal"); // optionally checking of basis
+			if (!check_ort_basis()){
+				throw ErrorMath::NonOrthogonal();
+			}
 			owner = true;
 		}
 
-		matrix<T, N>& as_matrix() { // only creator from matrix have access from outer scope, also Tensor/Vector have access  
-			assert(owner && " access is not permitted: called object is not an owner");
-			return *this->get();
-		}; 
 		/* WARNING : CHANGE Object: move to the target basis m, just basis changes*/
-		void            move_to_basis(const shared_handler_basis& m) { set_basis(m); };
-		/* not change object: just recalc components*/
+		virtual void    move_to_basis(const shared_handler_basis& m) { set_basis(m); };
+		/* NOTE: not change object: just recalc components*/
 		virtual void    change_basis (const shared_handler_basis& m) { set_basis(m); }; // must be overrided in chldren classes
 
 		friend std::ostream& operator<< (std::ostream& out, const shared_handler_basis& t) { out << *(t.get()); return out; };

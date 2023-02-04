@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cassert>
 #include <utility>
+#include "error.h"
 
 namespace tens {
 	template<typename T> bool is_small_value(T value);

@@ -55,7 +55,7 @@ namespace tens {
 		}
 
 		inline  matrix  operator- () const;
-		inline  bool         operator==(const matrix& m) const;
+		inline  bool    operator==(const matrix& m) const;
 		inline  matrix  operator+ (const matrix& m) const;
 		inline  matrix  operator- (const matrix& m) const;
 		inline  matrix  operator* (const matrix& m) const;
@@ -68,7 +68,7 @@ namespace tens {
 
 		virtual inline T   norm() const;
 		bool        check_ort() const;
-		inline matrix transpose() const;
+		inline matrix transpose();
 		inline matrix scal(TRANSPOSE left, const matrix& rhs, TRANSPOSE right) const;
 		inline matrix transform(TRANSPOSE left, const matrix& op, TRANSPOSE right) const;
 		inline  T   convolution(const matrix<T, N>& rhs) const;
@@ -111,7 +111,7 @@ namespace tens {
 	}
 
 	template<typename T, std::size_t N>
-	matrix<T, N> matrix<T, N>::transpose() const {
+	matrix<T, N> matrix<T, N>::transpose() {
 
 		matrix<T, N> res(*this);
 		for (size_t row = 0; row < N; row++)

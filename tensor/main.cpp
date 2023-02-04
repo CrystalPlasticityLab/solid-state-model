@@ -12,16 +12,16 @@ extern std::uniform_real_distribution<double> unidistr = std::uniform_real_distr
 
 void quternion_unit_test()
 {
-	//Vector<double, 3> v2( 1.0, GLOBAL_DEFAULT_BASIS<double, 3>);
-	//Vector<double, 3> v2( 2, GLOBAL_DEFAULT_BASIS<double, 3>);
-	//Vector<double, 3> v3(GLOBAL_DEFAULT_BASIS<double, 3>);
+	//vector<double, 3> v2( 1.0, GLOBAL_DEFAULT_BASIS<double, 3>);
+	//vector<double, 3> v2( 2, GLOBAL_DEFAULT_BASIS<double, 3>);
+	//vector<double, 3> v3(GLOBAL_DEFAULT_BASIS<double, 3>);
 	//v1 *= 1.4;
 	//v1 * 0.5;
 	//v1 = -v2;
 	//std::cout << v1;
 	//auto x = v1* v2;
 	//v3 = (v1 - v2*0.5) * 0.3;
-	//Vector<double, 3> v5 ( v1 + v2);
+	//vector<double, 3> v5 ( v1 + v2);
 	//v5.normalize();
 	////v5 = v1 + v2 * 0.5;
 	//v3 = v1;
@@ -40,7 +40,7 @@ void quternion_unit_test()
 	//q3 = q0 * q1;
 	//q4 = q1 * 1.1 - q2;
 	//q3 += q0 * 1.5;
-	////Vector<double, 4> v4;
+	////vector<double, 4> v4;
 	////q1 = v4;
 	//v1 = v2 + v2;
 	//q3 = q1;
@@ -78,9 +78,9 @@ void tensor_unit_test()
 		tens::matrix<double, DIM>* P = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
 		auto sm1 = new tens::shared_handler_basis<double, DIM>(*R); 
 		auto sm2 = new tens::shared_handler_basis<double, DIM>(*Q); 
-		auto sm3 = new tens::shared_handler_basis<double, DIM>(*P); 
-		tens::Tensor<double, DIM>* t0 = new tens::Tensor<double, DIM>(*Q, *sm1); bool ort = sm1->as_matrix().check_ort();
-		tens::Tensor<double, DIM>* t1 = new tens::Tensor<double, DIM>(*P, *sm2);  ort = sm2->as_matrix().check_ort();
+		auto sm3 = new tens::shared_handler_basis<double, DIM>(*P);
+		tens::Tensor<double, DIM>* t0 = new tens::Tensor<double, DIM>(*Q, *sm1); bool ort = sm1->check_ort_basis();
+		tens::Tensor<double, DIM>* t1 = new tens::Tensor<double, DIM>(*P, *sm2);  ort = sm2->check_ort_basis();
 		delete R;
 		delete Q;
 		tens::Tensor<double, DIM> t4(std::move(*t1)); delete t1;
@@ -112,9 +112,9 @@ void tens_vect_unit_test()
 	v0[0] = 1.0;
 	v0[1] = 1.5;
 	v0[2] = -0.5;
-	tens::Vector<double, 3> V0(v0, *sm1);
-	tens::Vector<double, 3> V1(v0, *sm1);
-	tens::Vector<double, 3> V3 = V0 + V1;
+	tens::vector<double, 3> V0(v0, *sm1);
+	tens::vector<double, 3> V1(v0, *sm1);
+	tens::vector<double, 3> V3 = V0 + V1;
 	tens::Tensor<double, DIM>* t0 = new tens::Tensor<double, DIM>(*R, *sm1);
 	tens::Tensor<double, DIM>* t1 = new tens::Tensor<double, DIM>(*R, *sm1);
 	tens::Tensor<double, DIM>  t2 = tens::outer_product(V0, V3); std::cout << t2;
@@ -133,24 +133,24 @@ void vector_unit_test()
 	v0[0] = 1.0;
 	v0[1] = 1.5;
 	v0[2] = -0.5;
-	tens::Vector<double, 3> V0(v0, *sm1);
-	tens::Vector<double, 3> V1(v0, *sm2);
+	tens::vector<double, 3> V0(v0, *sm1);
+	tens::vector<double, 3> V1(v0, *sm2);
 	{
-		tens::Vector<double, 3> V3 = V0 + V1;
-		tens::Vector<double, 3> V4 = V0 - V1;
+		tens::vector<double, 3> V3 = V0 + V1;
+		tens::vector<double, 3> V4 = V0 - V1;
 		auto V5 = V0 * V1;
 	}
-	tens::Vector<double, 3> V3 = std::move(V0);
+	tens::vector<double, 3> V3 = std::move(V0);
 	//V3 = std::move(V1);
 	delete sm1;
 	std::cout << V3 << " " << V1;
-	//Vector<double, DIM>  V4 = vector_product(V3, V1);
+	//vector<double, DIM>  V4 = vector_product(V3, V1);
 	std::cout << vector_product(V3, V1);
 	//tens::array<double, 40> VV(0.0);
 	//VV.normalize();
 	return;
 }
-int main()
+int main() 
 {
 	tens::is_small_value(1e-10);
 	run_test();

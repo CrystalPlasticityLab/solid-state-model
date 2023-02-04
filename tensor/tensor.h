@@ -6,9 +6,9 @@
 
 namespace tens {
 	template<typename T, std::size_t N> class Tensor;
-	template<typename T, std::size_t N> class Vector;
+	template<typename T, std::size_t N> class vector;
 	template<typename T, std::size_t N> std::ostream& operator<< (std::ostream& o, const Tensor<T, N>& t);
-	template<typename T, std::size_t N> Tensor<T,N> outer_product (const Vector<T, N>& lhs, const Vector<T, N>& rhs);
+	template<typename T, std::size_t N> Tensor<T,N> outer_product (const vector<T, N>& lhs, const vector<T, N>& rhs);
 
 	template<typename T, size_t N>
 	class Tensor : private matrix<T, N>,
@@ -36,12 +36,12 @@ namespace tens {
 		Tensor& operator *=(const Tensor& t);
 
 		T       convolution(const Tensor<T, N>& rhs) const;
-		friend Tensor<T, N> outer_product(const Vector<T, N>& lhs, const Vector<T, N>& rhs);
-		friend Vector<T, N> operator * (const Tensor& t, const Vector<T, N>& v) {
-			return Vector<T, N>(v.comp_at_basis(t.get_basis()) * static_cast<matrix<T, N>>(t), t.get_basis()); }
+		friend Tensor<T, N> outer_product(const vector<T, N>& lhs, const vector<T, N>& rhs);
+		friend vector<T, N> operator * (const Tensor& t, const vector<T, N>& v) {
+			return vector<T, N>(v.comp_at_basis(t.get_basis()) * static_cast<matrix<T, N>>(t), t.get_basis()); }
 
-		friend Vector<T, N>  operator * (const Vector<T, N>& v, const Tensor& t) {
-			return Vector<T, N>(static_cast<matrix<T, N>>(t) * v.comp_at_basis(t.get_basis()), t.get_basis()); }
+		friend vector<T, N>  operator * (const vector<T, N>& v, const Tensor& t) {
+			return vector<T, N>(static_cast<matrix<T, N>>(t) * v.comp_at_basis(t.get_basis()), t.get_basis()); }
 	};
 
 	template<typename T, std::size_t N>
@@ -125,7 +125,7 @@ namespace tens {
 	}
 
 	template<typename T, size_t N>
-	Tensor<T, N> outer_product(const Vector<T, N>& _lhs, const Vector<T, N>& _rhs){
+	Tensor<T, N> outer_product(const vector<T, N>& _lhs, const vector<T, N>& _rhs){
 		tens::array<T, N> lhs = _lhs.get_comp_at_basis(GLOBAL_DEFAULT_BASIS<T, N>);
 		tens::array<T, N> rhs = _rhs.get_comp_at_basis(GLOBAL_DEFAULT_BASIS<T, N>);
 		matrix  <T, N> m = lhs.outer_product(rhs);

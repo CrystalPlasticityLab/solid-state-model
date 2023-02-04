@@ -12,6 +12,14 @@ void test_array(){
         pass_tests += expect((v_zero==vr), "equal vectors");
         all_tests++;
     }
+    {   
+        try{
+            v_zero.normalize();
+        } catch (std::exception &e){
+            pass_tests += expect(std::string(e.what()) == ErrorMessage::DIV_BY_ZERO_MSG, "throw div zero at normalize");
+        }
+        all_tests++;
+    }
     {
         auto vl = tens::array<double, 3>(std::array<double, 3>{0.,0.1,0});
         auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,0,0});
@@ -137,11 +145,11 @@ void test_array(){
             all_tests++;
         }
         {
-           pass_tests += expect((vector_product(vl,vr)==vl_cros_vr), "v2 x v1 check");
+           pass_tests += expect((array_vector_product(vl,vr)==vl_cros_vr), "v2 x v1 check");
            all_tests++;
         }
         {
-           pass_tests += expect((vector_product(vl,vr)==-vector_product(vr,vl)), "v2 x v1 = -(v1 x v2)");
+           pass_tests += expect((array_vector_product(vl,vr)==-array_vector_product(vr,vl)), "v2 x v1 = -(v1 x v2)");
            all_tests++;
         }
     }
