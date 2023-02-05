@@ -3,7 +3,7 @@
 void test_matr(){
     using namespace tens;
 
-    std::cout << " =================== Start testing matr_base ===================" << std::endl;
+    std::cout << " =================== Start testing matrix ===================" << std::endl;
     int all_tests = 0;
     int pass_tests = 0;
     auto m_zero = matrix<double, 3>(MATRIXINITTYPE::ZERO);
@@ -128,5 +128,5 @@ void test_matr(){
     // TODO: transform with ort M
 
     std::cout << " Test passed : " << std::to_string(pass_tests) << "/" << std::to_string(all_tests) << std::endl;
-    std::cout << " ==================== End Testing matr_base ====================" << std::endl;
+    std::cout << " ==================== End Testing matrix ====================" << std::endl;
 }

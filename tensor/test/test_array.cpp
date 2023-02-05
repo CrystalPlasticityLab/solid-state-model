@@ -3,10 +3,11 @@
 void test_array(){
     using namespace tens;
 
-    std::cout << " =================== Start testing tens::array ===================" << std::endl;
+    std::cout << " =================== Start testing array ===================" << std::endl;
     int all_tests = 0;
     int pass_tests = 0;
     auto v_zero = tens::array<double, 3>(0.0);
+    auto v1 = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
     {
         auto vr = tens::array<double, 3>(std::array<double, 3>{0,0,0});
         pass_tests += expect((v_zero==vr), "equal vectors");
@@ -27,68 +28,56 @@ void test_array(){
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect(((vr+v_zero)==vr), "(v+zero_vector) = zero_vector");
+        pass_tests += expect(((v1+v_zero)==v1), "(v+zero_vector) = zero_vector");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect(((vr-v_zero)==vr), "(v-zero_vector) = zero_vector");
+        pass_tests += expect(((v1-v_zero)==v1), "(v-zero_vector) = zero_vector");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect(((vr-vr)==v_zero), "(v-v) = zero_vector (operator -)");
+        pass_tests += expect(((v1-v1)==v_zero), "(v-v) = zero_vector (operator -)");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect(((vr-=vr)==v_zero), "(v-v) = 2*v (operator -=)");
+        pass_tests += expect(((v1-=v1)==v_zero), "(v-v) = 2*v (operator -=)");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect(((vr+vr)==vr*2), "(v+v) = 2*v (operator +)");
+        pass_tests += expect(((v1+v1)==v1*2), "(v+v) = 2*v (operator +)");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect(((vr+=vr)==vr), "(v+v) = 2*v (operator +=)");
+        pass_tests += expect(((v1+=v1)==v1), "(v+v) = 2*v (operator +=)");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect(((vr*1.0)==vr), "1*v = v");
+        pass_tests += expect(((v1*1.0)==v1), "1*v = v");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect(((vr*0.0)==v_zero), "0*v = zero_vector");
+        pass_tests += expect(((v1*0.0)==v_zero), "0*v = zero_vector");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
         double x = 1.23456;
-        pass_tests += expect(((vr*x).norm()==vr.norm()*x), "|x*v| = x*|v| (operator *)");
+        pass_tests += expect(((v1*x).norm()==v1.norm()*x), "|x*v| = x*|v| (operator *)");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
         double x = 1.23456;
-        pass_tests += expect(((vr/x).norm()==vr.norm()/x), "|v/x| = |v|/x (operator /)");
+        pass_tests += expect(((v1/x).norm()==v1.norm()/x), "|v/x| = |v|/x (operator /)");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        const double vr_norm = vr.norm();
+        const double vr_norm = v1.norm();
         const double x = 1.23456;
-        vr *= x;
-        pass_tests += expect((vr.norm()==vr.norm())&&(vr.norm()==vr_norm*x), "|x*v| = x*|v| (operator *=)");
+        v1 *= x;
+        pass_tests += expect((v1.norm()==v1.norm())&&(v1.norm()==vr_norm*x), "|x*v| = x*|v| (operator *=)");
         all_tests++;
     }
     {
-        auto arr = std::array<double, 3>{0.01,-1.234,3.853};
-        auto vr = tens::array<double, 3>(arr);
+        auto vr = tens::array<double, 3>(v1);
         const double vr_norm = vr.norm();
         const double x = 1.23456;
         vr /= x;
@@ -96,13 +85,11 @@ void test_array(){
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect((vr*v_zero)==0.0, "v.zero_vector = 0");
+        pass_tests += expect((v1*v_zero)==0.0, "v.zero_vector = 0");
         all_tests++;
     }
     {
-        auto vr = tens::array<double, 3>(std::array<double, 3>{0.01,-1.234,3.853});
-        pass_tests += expect(sqrt(vr*vr)==vr.norm(), "v.v = |v|^2");
+        pass_tests += expect(sqrt(v1*v1)==v1.norm(), "v.v = |v|^2");
         all_tests++;
     }
 
@@ -155,5 +142,5 @@ void test_array(){
     }
     
     std::cout << " Test passed : " << std::to_string(pass_tests) << "/" << std::to_string(all_tests) << std::endl;
-    std::cout << " ==================== End Testing tens::array ====================" << std::endl;
+    std::cout << " ==================== End Testing array ====================" << std::endl;
 }

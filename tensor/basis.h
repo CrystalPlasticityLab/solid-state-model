@@ -22,16 +22,20 @@ namespace tens {
 		};
 		const void     set_basis(const shared_handler_basis& rhs) { *this = (rhs); }
 
-	public:
-		bool check_ort_basis() const {
-			return this->get()->check_ort();
-		}
-
 		explicit shared_handler_basis(const matrix<T, N>& m) : _shared(std::make_shared<matrix<T, N>>(m)) {
 			if (!check_ort_basis()){
 				throw ErrorMath::NonOrthogonal();
 			}
 			owner = true;
+		}
+	public:
+
+		static shared_handler_basis<T,N> create_basis(const matrix<T, N>& m){
+			return shared_handler_basis<T,N>(m);
+		}
+
+		bool check_ort_basis() const {
+			return this->get()->check_ort();
 		}
 
 		/* WARNING : CHANGE Object: move to the target basis m, just basis changes*/
@@ -41,7 +45,12 @@ namespace tens {
 
 		friend std::ostream& operator<< (std::ostream& out, const shared_handler_basis& t) { out << *(t.get()); return out; };
 	};
+	
+	template<typename T, size_t N>
+	shared_handler_basis<T,N> create_basis(const matrix<T, N>& m){
+		return shared_handler_basis<T,N>::create_basis(m);
+	}
 
 	template<typename T, size_t N>
-	const shared_handler_basis<T, N> GLOBAL_DEFAULT_BASIS = shared_handler_basis<T, N>(matrix<T, N>(MATRIXINITTYPE::INDENT));
-}
+	const shared_handler_basis<T, N> GLOBAL_DEFAULT_BASIS = create_basis<T,N>(matrix<T, N>(MATRIXINITTYPE::INDENT));//shared_handler_basis<T, N>(matrix<T, N>(MATRIXINITTYPE::INDENT));
+};

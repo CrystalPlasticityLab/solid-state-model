@@ -17,23 +17,24 @@ namespace tens {
 		typedef  matrix  <T, N>        _matrix;
 		typedef  shared_handler_basis<T, N> _handler;
 	public:
-		virtual void      change_basis     (const _handler& m) override;
-		matrix<T, N> get_comp_at_basis(const _handler& m) const; // calc comp of this at basis
+		virtual void       move_to_basis   (const _handler& m) override { shared_handler_basis<T, N>::move_to_basis(m); };
+		virtual void       change_basis     (const _handler& m) override;
+		matrix<T, N>       get_comp_at_basis(const _handler& m) const; // calc comp of this at basis
+
 		Tensor(const _matrix& comp, const _handler& basis) : _matrix(comp), _handler(basis) {};
-		Tensor(const _matrix& comp, const   Tensor& basis) : _matrix(comp), _handler(static_cast<const _handler&>(basis)) {};
-		explicit Tensor(const  Tensor&  tens) : _matrix(tens), _handler(static_cast<const _handler&>(tens)) {}; // copy constructor
+		Tensor(const  Tensor&  tens) : _matrix(tens), _handler(static_cast<const _handler&>(tens)) {}; // copy constructor
 		Tensor(Tensor&& tens) noexcept : _matrix(static_cast<_matrix&&>(tens)), _handler(static_cast<_handler&&>(tens)) {}; // move constructor
 
 		friend std::ostream& operator<< <>(std::ostream& out, const Tensor& t);
-		Tensor& operator = (const Tensor& t);
-		Tensor& operator = (Tensor&& t) noexcept;
-		bool    operator== (const Tensor& t) const;
-		Tensor  operator + (const Tensor& t) const;
-		Tensor  operator - (const Tensor& t) const;
-		Tensor  operator * (const Tensor& t) const;
-		Tensor& operator +=(const Tensor& t);
-		Tensor& operator -=(const Tensor& t);
-		Tensor& operator *=(const Tensor& t);
+		inline Tensor& operator = (const Tensor<T,N>& t);
+		inline Tensor& operator = (Tensor&& t) noexcept;
+		inline bool    operator== (const Tensor& t) const;
+		inline Tensor  operator + (const Tensor& t) const;
+		inline Tensor  operator - (const Tensor& t) const;
+		inline Tensor  operator * (const Tensor& t) const;
+		inline Tensor& operator +=(const Tensor& t);
+		inline Tensor& operator -=(const Tensor& t);
+		inline Tensor& operator *=(const Tensor& t);
 
 		T       convolution(const Tensor<T, N>& rhs) const;
 		friend Tensor<T, N> outer_product(const vector<T, N>& lhs, const vector<T, N>& rhs);
@@ -46,11 +47,11 @@ namespace tens {
 
 	template<typename T, std::size_t N>
 	bool Tensor<T, N>::operator==(const Tensor<T, N>& rhs) const {
-		const Tensor<T, N> diff = rhs - this;
-		if (diff.convolution(diff) > 1e-14) {
-			return false;
+		const Tensor<T, N> diff = rhs - *this;
+		if (is_small_value(diff.convolution(diff))) {
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	template<typename T, size_t N>
@@ -110,7 +111,6 @@ namespace tens {
 	T   Tensor<T, N>::convolution(const Tensor<T, N>& rhs) const {
 		return static_cast<matrix<T, N>>(*this).convolution(rhs.get_comp_at_basis(*this));
 	}
-
 	/* return components of this in the target basis m*/
 	template<typename T, size_t N>
 	matrix<T, N> Tensor<T, N>::get_comp_at_basis(const   shared_handler_basis<T, N>& m) const {

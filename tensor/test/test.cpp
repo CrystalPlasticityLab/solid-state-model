@@ -2,6 +2,7 @@
 
 void run_test(){
     test_array();
-   // test_matr();
     test_vector();
+    test_matr();
+    test_tensor();
 }

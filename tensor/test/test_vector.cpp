@@ -3,7 +3,7 @@
 void test_vector(){
     using namespace tens;
 
-    std::cout << " =================== Start testing tens::vector ===================" << std::endl;
+    std::cout << " =================== Start testing vector ===================" << std::endl;
     int all_tests = 0;
     int pass_tests = 0;
     auto a_zero = array<double, 3>(0.0);
@@ -12,8 +12,8 @@ void test_vector(){
     const auto a3 = random_array<double, 3>();
     const auto a4 = random_array<double, 3>();
 
-	const auto basis1 = shared_handler_basis<double, 3>(generate_rand_ort<double, 3>());
-	const auto basis2 = shared_handler_basis<double, 3>(generate_rand_ort<double, 3>());
+	const auto basis1 = create_basis(generate_rand_ort<double, 3>());
+	const auto basis2 = create_basis(generate_rand_ort<double, 3>());
     const auto v_zero1 = vector<double, 3>(a_zero, basis1);
     const auto v_zero2 = vector<double, 3>(a_zero, basis2);
     const auto v11 = vector<double, 3>(a1, basis1);
@@ -66,6 +66,12 @@ void test_vector(){
     }
     {
         vector<double,3> vr1 = v11;
+        vr1.change_basis(basis2);
+        pass_tests += expect((a1 == vr1.get_comp_at_basis(basis1)), "component has not changed at the same basis");
+        all_tests++;
+    }
+    {
+        vector<double,3> vr1 = v11;
         vr1.move_to_basis(basis2);
         pass_tests += expect(!(v11 == vr1), "vector has changed after changing basis");
         all_tests++;
@@ -90,5 +96,5 @@ void test_vector(){
    }
     
     std::cout << " Test passed : " << std::to_string(pass_tests) << "/" << std::to_string(all_tests) << std::endl;
-    std::cout << " ==================== End Testing tens::vector ====================" << std::endl;
+    std::cout << " ==================== End Testing vector ====================" << std::endl;
 }

@@ -1,5 +1,6 @@
 #include "test/expect.h"
 #include "test/test.h"
+#include "basis.h"
 #include "vector.h"
 #include "tensor.h"
 #include "quat.h"
@@ -57,6 +58,7 @@ void matrix_unit_test()
 }
 void tensor_unit_test()
 {
+	using namespace tens;
 	auto M1 = tens::matrix<double, DIM>(tens::MATRIXINITTYPE::INDENT);
 	auto M2 = tens::matrix<double, DIM>(tens::MATRIXINITTYPE::INDENT);
 	M1 = std::move(M2);
@@ -66,25 +68,25 @@ void tensor_unit_test()
 
 	//q1.vector_product(q2);
 	auto mm = tens::matrix<double, DIM>(tens::MATRIXINITTYPE::INDENT);
-	tens::shared_handler_basis<double, DIM> rr(mm);
+	auto rr = create_basis(generate_rand_ort<double, 3>());
 	//typedef std::shared_ptr<> shared_handler;
 	std::shared_ptr<double> xx = std::make_shared<double>();
 	tens::matrix<double, DIM>* R = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
-	tens::shared_handler_basis<double, DIM> MM0(*R);
+	//tens::shared_handler_basis<double, DIM> MM0(*R);
 	for (size_t i = 0; i < 10000000; i++)
 	{
 		tens::matrix<double, DIM>* R = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
 		tens::matrix<double, DIM>* Q = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
 		tens::matrix<double, DIM>* P = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
-		auto sm1 = new tens::shared_handler_basis<double, DIM>(*R); 
-		auto sm2 = new tens::shared_handler_basis<double, DIM>(*Q); 
-		auto sm3 = new tens::shared_handler_basis<double, DIM>(*P);
-		tens::Tensor<double, DIM>* t0 = new tens::Tensor<double, DIM>(*Q, *sm1); bool ort = sm1->check_ort_basis();
-		tens::Tensor<double, DIM>* t1 = new tens::Tensor<double, DIM>(*P, *sm2);  ort = sm2->check_ort_basis();
+		auto sm1 = create_basis(*R); 
+		auto sm2 = create_basis(*Q); 
+		auto sm3 = create_basis(*P);
+		tens::Tensor<double, DIM>* t0 = new tens::Tensor<double, DIM>(*Q, sm1); bool ort = sm1.check_ort_basis();
+		tens::Tensor<double, DIM>* t1 = new tens::Tensor<double, DIM>(*P, sm2);  ort = sm2.check_ort_basis();
 		delete R;
 		delete Q;
 		tens::Tensor<double, DIM> t4(std::move(*t1)); delete t1;
-		t1 = new tens::Tensor<double, DIM>(*P, *sm2);
+		t1 = new tens::Tensor<double, DIM>(*P, sm2);
 		delete P;
 
 		tens::Tensor<double, DIM> t3(*t0);
@@ -93,11 +95,8 @@ void tensor_unit_test()
 		t4 -= *t1;
 		t4 *= *t0;
 		t4 += *t0;
-		t4.change_basis(*sm2);
-		t1->change_basis(*sm3);
-		delete sm1;
-		delete sm2;
-		delete sm3;
+		t4.change_basis(sm2);
+		t1->change_basis(sm3);
 		delete t0;
 		delete t1;
 	}
@@ -106,17 +105,17 @@ void tensor_unit_test()
 void tens_vect_unit_test()
 {
 	tens::matrix<double, DIM>* R = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
-	auto sm1 = new  tens::shared_handler_basis<double, DIM>(*R);
+	auto sm1 = create_basis(*R); 
 
 	tens::array<double, DIM> v0(0.0);
 	v0[0] = 1.0;
 	v0[1] = 1.5;
 	v0[2] = -0.5;
-	tens::vector<double, 3> V0(v0, *sm1);
-	tens::vector<double, 3> V1(v0, *sm1);
+	tens::vector<double, 3> V0(v0, sm1);
+	tens::vector<double, 3> V1(v0, sm1);
 	tens::vector<double, 3> V3 = V0 + V1;
-	tens::Tensor<double, DIM>* t0 = new tens::Tensor<double, DIM>(*R, *sm1);
-	tens::Tensor<double, DIM>* t1 = new tens::Tensor<double, DIM>(*R, *sm1);
+	tens::Tensor<double, DIM>* t0 = new tens::Tensor<double, DIM>(*R, sm1);
+	tens::Tensor<double, DIM>* t1 = new tens::Tensor<double, DIM>(*R, sm1);
 	tens::Tensor<double, DIM>  t2 = tens::outer_product(V0, V3); std::cout << t2;
 	tens::Tensor<double, DIM>  t3 = tens::outer_product(V3, V0); std::cout << t3;
 }
@@ -125,16 +124,16 @@ void vector_unit_test()
 {
 	tens::matrix<double, DIM>* R1 = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
 	tens::matrix<double, DIM>* R2 = new tens::matrix<double, DIM>(tens::generate_rand_ort<double, DIM>());
-	auto sm1 = new  tens::shared_handler_basis<double, DIM>(tens::generate_rand_ort<double, DIM>());
-	auto sm2 = new  tens::shared_handler_basis<double, DIM>(*R2);
+	auto sm1 = create_basis(tens::generate_rand_ort<double, DIM>());
+	auto sm2 = create_basis(*R2); 
 	delete R1;
 	delete R2;
 	tens::array<double, DIM> v0(0.0);
 	v0[0] = 1.0;
 	v0[1] = 1.5;
 	v0[2] = -0.5;
-	tens::vector<double, 3> V0(v0, *sm1);
-	tens::vector<double, 3> V1(v0, *sm2);
+	tens::vector<double, 3> V0(v0, sm1);
+	tens::vector<double, 3> V1(v0, sm2);
 	{
 		tens::vector<double, 3> V3 = V0 + V1;
 		tens::vector<double, 3> V4 = V0 - V1;
@@ -142,7 +141,7 @@ void vector_unit_test()
 	}
 	tens::vector<double, 3> V3 = std::move(V0);
 	//V3 = std::move(V1);
-	delete sm1;
+
 	std::cout << V3 << " " << V1;
 	//vector<double, DIM>  V4 = vector_product(V3, V1);
 	std::cout << vector_product(V3, V1);
@@ -152,6 +151,8 @@ void vector_unit_test()
 }
 int main() 
 {
+	
+	auto basis = tens::create_basis(tens::matrix<double,3>(tens::MATRIXINITTYPE::INDENT));
 	tens::is_small_value(1e-10);
 	run_test();
 	//expect(true, "this is good expext message");

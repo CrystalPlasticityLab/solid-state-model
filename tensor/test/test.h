@@ -8,4 +8,5 @@
 void test_array();
 void test_vector();
 void test_matr();
+void test_tensor();
 void run_test();
