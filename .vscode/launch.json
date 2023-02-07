@@ -5,11 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "by-gdb",
+            "name": "C++ Launch",
+            "type": "cppdbg",
             "request": "launch",
-            "name": "Launch(gdb)",
-            "debuggerArgs": [],
-            "program": "a.exe",
+            "program": "${workspaceRoot}/a",
             "cwd": "${workspaceRoot}"
         }
     ]
