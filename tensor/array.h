@@ -3,6 +3,13 @@
 #include "matrix.h"
 
 namespace tens {
+
+	enum class ARRAYTTYPE{
+		ZERO,
+		RANDOM,
+		RANDOMUNIT
+	};
+
 	template<typename T, std::size_t N> class array;
 	template<typename T, std::size_t N> std::ostream& operator<< (std::ostream& o, const array<T, N>& v);
 
@@ -13,6 +20,11 @@ namespace tens {
 		void _fill(const T& val){
 			for (size_t i = 0; i < N; i++){
 				(*this)[i] =  val;
+			}
+		}
+		void _fill_random(){
+			for (size_t i = 0; i < N; i++) {
+				(*this)[i] = static_cast<T>(unidistr(gen));
 			}
 		}
 		void _copy(const T* const values){
@@ -36,6 +48,7 @@ namespace tens {
 		};
 	public:
 		~array() { };
+		explicit array(ARRAYTTYPE AT);
 		explicit array(const T& val)               : std::unique_ptr<T[]>(new T[N]), _dim(N) { this->_fill(val); }; // public ctor by const value
 		explicit array(const std::array<T,N>& arr) : std::unique_ptr<T[]>(new T[N]), _dim(N) { this->_copy(arr); }; // public ctor by astd::array
 		explicit array(const array&  a)            : std::unique_ptr<T[]>(new T[a._dim]), _dim(a._dim)  { this->_copy(a.get()); }; // copy ctor
@@ -48,6 +61,7 @@ namespace tens {
 			this->_dim = rhs._dim;
 			return *this;
 		}
+
 		inline array& operator= (array&& rhs) noexcept {  // move assign operator
 			static_cast<std::unique_ptr<T[]>&>(*this) = std::move(rhs);
 			return *this;
@@ -102,13 +116,24 @@ namespace tens {
 	};
 
 	template<typename T, std::size_t N>
-	array<T, N> random_array(){
-		using namespace tens;
-		auto v = array<T, N>(0.0);
-		for (size_t row = 0; row < N; row++) {
-			v[row] = static_cast<T>(unidistr(gen));
+	array<T, N>::array(ARRAYTTYPE AT) : std::unique_ptr<T[]>(new T[N]), _dim(N) {
+		switch (AT)
+		{
+		case ARRAYTTYPE::ZERO:		
+			this->_fill((T)0);
+			return;
+		case ARRAYTTYPE::RANDOM: 
+			_fill_random();
+			return;
+		case ARRAYTTYPE::RANDOMUNIT:
+			_fill_random();
+			normalize();
+			return;
+		default:                     	
+			this->_fill((T)0);
+			return;
 		}
-		return v;
+		return;
 	}
 
 	template<typename T, size_t N>
@@ -118,7 +143,6 @@ namespace tens {
 			res[row] = -(*this)[row];
 		return res;
 	};
-
 
 	template<typename T, size_t N>
 	inline array<T, N> array<T, N>::operator+ (const array& rhs) const {
@@ -147,7 +171,7 @@ namespace tens {
 	template<typename T, size_t N>
 	inline array<T, N> array<T, N>::operator / (const  T& div) const {
 		array<T, N> res;
-		if (abs(div) > (T)0) {
+		if (is_not_small_value(div)) {
 			T mult = (T)1 / div;
 			for (size_t row = 0; row < N; row++)
 				res[row] = (*this)[row] * mult;

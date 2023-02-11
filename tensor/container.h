@@ -8,6 +8,7 @@
 #include "error.h"
 
 namespace tens {
+	template<typename T> bool is_not_small_value(T value);
 	template<typename T> bool is_small_value(T value);
 	template<typename container_type>
 	class container

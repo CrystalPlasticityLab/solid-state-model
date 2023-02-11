@@ -4,6 +4,11 @@
 #include "matrix.h"
 #include "tensor.h"
 
+template <> bool tens::is_not_small_value(long double value) { return (abs(value) > 1e-13) ? true : false;}
+template <> bool tens::is_not_small_value(double      value) { return (abs(value) > 1e-13) ? true : false;}
+template <> bool tens::is_not_small_value(float       value) { return (abs(value) > 1e-7f) ? true : false;}
+template <> bool tens::is_not_small_value(int         value) { return (abs(value) == 0) ? false : true; }
+
 template <> bool tens::is_small_value(long double value) { return (abs(value) < 1e-13) ? true : false;}
 template <> bool tens::is_small_value(double      value) { return (abs(value) < 1e-13) ? true : false;}
 template <> bool tens::is_small_value(float       value) { return (abs(value) < 1e-7f) ? true : false;}

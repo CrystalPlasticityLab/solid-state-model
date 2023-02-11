@@ -7,10 +7,10 @@ void test_vector(){
     int all_tests = 0;
     int pass_tests = 0;
     auto a_zero = array<double, 3>(0.0);
-    const auto a1 = random_array<double, 3>();
-    const auto a2 = random_array<double, 3>();
-    const auto a3 = random_array<double, 3>();
-    const auto a4 = random_array<double, 3>();
+    const auto a1 = array<double, 3>(ARRAYTTYPE::RANDOM);
+    const auto a2 = array<double, 3>(ARRAYTTYPE::RANDOM);
+    const auto a3 = array<double, 3>(ARRAYTTYPE::RANDOM);
+    const auto a4 = array<double, 3>(ARRAYTTYPE::RANDOM);
 
 	const auto basis1 = create_basis(generate_rand_ort<double, 3>());
 	const auto basis2 = create_basis(generate_rand_ort<double, 3>());
@@ -91,7 +91,7 @@ void test_vector(){
     } 
    {
        const auto cross = vector_product(v11,v21);
-       pass_tests += expect(( is_small_value(cross*v11) && is_small_value(cross*v21)), "v1 x v2 ia ort to v1 and v2");
+       pass_tests += expect(( !is_not_small_value(cross*v11) && !is_not_small_value(cross*v21)), "v1 x v2 ia ort to v1 and v2");
        all_tests++;
    }
     
