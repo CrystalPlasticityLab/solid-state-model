@@ -7,32 +7,52 @@ namespace tens {
 	template<typename T, std::size_t N> std::ostream& operator<< (std::ostream& o, const array<T, N>& v);
 
 	template<typename T, size_t N>
-	class array : public container <std::array<T, N>>
+	class array : public std::unique_ptr<T[]>
 	{
-		typedef  std::array<T, N>  _array;
-		typedef container <std::array<T, N>> _cont;
+		size_t  _dim;
+		void _fill(const T& val){
+			for (size_t i = 0; i < N; i++){
+				(*this)[i] =  val;
+			}
+		}
+		void _copy(const T* const values){
+			for (size_t i = 0; i < N; i++){
+				(*this)[i] =  values[i];
+			}
+		}
+		void _copy(const std::array<T,N>& arr){
+			for (size_t i = 0; i < N; i++){
+				(*this)[i] =  arr[i];
+			}
+		}
+		void _copy(const array& arr){
+			for (size_t i = 0; i < N; i++){
+				(*this)[i] =  arr[i];
+			}
+		}
 	protected:
-		array() : _cont() { this->_Elem->fill(T()); };
+		array() : std::unique_ptr<T[]>(new T[N]), _dim(N) { 
+			this->_fill(T());
+		};
 	public:
 		~array() { };
-		explicit array(T val)                 : _cont()  { this->_Elem->fill(val); };
-		explicit array(const _array &_arr)    : _cont(static_cast<const _array&>(_arr)) { };
-		explicit array(const array&  v)       : _cont(static_cast<const _cont& >(v))   { }; // copy constructor
-		array(array&& v)noexcept : _cont(static_cast<_cont&&>(v))         { }; // move constructor
-
-			  T& operator [](size_t i)          { return (*this->_Elem)[i]; };
-		const T& operator [](size_t i) const    { return (*this->_Elem)[i]; };
+		explicit array(const T& val)               : std::unique_ptr<T[]>(new T[N]), _dim(N) { this->_fill(val); }; // public ctor by const value
+		explicit array(const std::array<T,N>& arr) : std::unique_ptr<T[]>(new T[N]), _dim(N) { this->_copy(arr); }; // public ctor by astd::array
+		explicit array(const array&  a)            : std::unique_ptr<T[]>(new T[a._dim]), _dim(a._dim)  { this->_copy(a.get()); }; // copy ctor
+		array(array&& v)noexcept : std::unique_ptr<T[]>(std::move(v))         { }; // move ctor
 
 		friend std::ostream& operator<< <>(std::ostream& out, const array& a);
 
-		inline array& operator= (const array& rhs)	{
-			container<_array>::operator = (static_cast<const container<_array>&>(rhs));
+		inline array& operator= (const array& rhs)	{ // copy assign operator
+			_copy(rhs);
+			this->_dim = rhs._dim;
 			return *this;
 		}
-		inline array& operator= (array&& rhs) noexcept {
-			container<_array>::operator = (static_cast<container<_array>&& >(rhs));
+		inline array& operator= (array&& rhs) noexcept {  // move assign operator
+			static_cast<std::unique_ptr<T[]>&>(*this) = std::move(rhs);
 			return *this;
 		}
+		
 		inline array  operator- () const;
 		inline array  operator+ (const array& rhs) const;
 		inline array  operator- (const array& rhs) const;
@@ -82,7 +102,7 @@ namespace tens {
 	};
 
 	template<typename T, std::size_t N>
-	tens::array<T, N> random_array(){
+	array<T, N> random_array(){
 		using namespace tens;
 		auto v = array<T, N>(0.0);
 		for (size_t row = 0; row < N; row++) {
