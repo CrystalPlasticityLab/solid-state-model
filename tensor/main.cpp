@@ -12,7 +12,14 @@ extern std::uniform_real_distribution<double> unidistr = std::uniform_real_distr
 
 int main() 
 {
-	run_test();
-
+	try
+	{
+		run_test();
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	
 	return 0;
 }
