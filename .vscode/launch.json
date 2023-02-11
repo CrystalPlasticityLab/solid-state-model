@@ -4,8 +4,16 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+       // {
+       //     "type": "by-gdb",
+       //     "name": "C++ Launch",
+       //     "request": "launch",
+       //     "debuggerArgs": [],
+       //     "program": "a.exe",
+       //     "cwd": "${workspaceRoot}"
+       // },
         {
-            "name": "C++ Launch",
+            "name": "C++ debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/a",

@@ -91,7 +91,7 @@ void test_vector(){
     } 
    {
        const auto cross = vector_product(v11,v21);
-       pass_tests += expect(( is_small_value(cross*v11) && is_small_value(cross*v21)), "check cross product");
+       pass_tests += expect(( is_small_value(cross*v11) && is_small_value(cross*v21)), "v1 x v2 ia ort to v1 and v2");
        all_tests++;
    }
     
