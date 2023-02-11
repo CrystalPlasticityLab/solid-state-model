@@ -118,7 +118,7 @@ namespace tens {
 			return static_cast<matrix<T, N>> (*this);
 		}
 		else {
-			matrix<T, N> op   = *this->get() * m.get()->transpose();
+			matrix<T, N> op   = *static_cast<const shared_handler_basis<T, N>*>(this)->get() * m.get()->transpose();
 			const matrix<T, N>& comp = static_cast<const matrix<T, N>&> (*this);
 			return this->transform(TRANSPOSE::TRUE, op, TRANSPOSE::FALSE); // op^t * (*this) * op
 		}

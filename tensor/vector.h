@@ -68,7 +68,7 @@ namespace tens {
 			return static_cast<array<T, N>> (*this);
 		}
 		else {
-			const matrix<T, N>& Rl = *static_cast<const _handler&>(*this).get();
+			const matrix<T, N>& Rl = *static_cast<const _handler*>(this)->get();
 			const matrix<T, N>& Rr = m.get()->transpose();
 			const array<T, N>& comp = static_cast<const array<T, N>&> (*this);
 			return (comp * Rl) * Rr;
