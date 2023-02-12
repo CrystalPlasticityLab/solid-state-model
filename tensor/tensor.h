@@ -26,7 +26,7 @@ namespace tens {
 		Tensor(Tensor&& tens) noexcept : _matrix(static_cast<_matrix&&>(tens)), _handler(static_cast<_handler&&>(tens)) {}; // move constructor
 
 		friend std::ostream& operator<< <>(std::ostream& out, const Tensor& t);
-		inline Tensor& operator = (const Tensor<T,N>& t);
+		inline Tensor& operator = (const Tensor& t);
 		inline Tensor& operator = (Tensor&& t) noexcept;
 		inline bool    operator== (const Tensor& t) const;
 		inline Tensor  operator + (const Tensor& t) const;

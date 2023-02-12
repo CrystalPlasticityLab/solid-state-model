@@ -5,4 +5,5 @@ void run_test(){
     test_vector();
     test_matr();
     test_tensor();
+    test_leak();
 }

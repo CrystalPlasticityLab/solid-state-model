@@ -20,7 +20,6 @@ namespace tens {
 		FALSE
 	};
 
-
 	template<typename T, std::size_t N> class matrix;
 	template<typename T, std::size_t N> std::ostream& operator<< (std::ostream& o, const matrix<T,N>& m);
 	template<typename T, std::size_t N> matrix<T, N> generate_rand_ort();
@@ -29,7 +28,7 @@ namespace tens {
 	template<typename T, std::size_t N>
 	class matrix : public std::unique_ptr<T[]>
 	{
-		typedef  std::array<std::array<T, N>, N>  _array;
+		typedef  std::array<std::array<T, N>, N>  array;
 
 		size_t  _dim;
 		std::array<T*, N> _rows;
@@ -51,6 +50,13 @@ namespace tens {
 			_set_rows();
 		}
 
+		void _move(matrix& _m){
+			matrix&& m = std::move(_m);
+			this->_dim = m._dim;
+			static_cast<std::unique_ptr<T[]>&>(*this) = std::move(m);
+			std::swap(m._rows, this->_rows);
+		}
+
 		void _set_rows(){
 			const T* ptr = this->get();
 			for (size_t row = 0; row < _dim; row++){
@@ -58,26 +64,24 @@ namespace tens {
 			}
 		}
 
-		matrix() : std::unique_ptr<T[]>(new T[N*N]), _dim(N) {
-			_set_rows();
-		};
+		matrix() : std::unique_ptr<T[]>(new T[N*N]), _dim(N) { _set_rows(); }; // default ctor
 	protected:
 	public:
 		~matrix() { };
-		explicit matrix(const _array& arr)  : std::unique_ptr<T[]>(new T[N*N]), _dim(N) { _copy(arr); };
-		explicit matrix(const matrix& m)    : std::unique_ptr<T[]>(new T[m._dim*m._dim]), _dim(m._dim) { this->_copy(m); }; // copy constructor
-		matrix(matrix&& m)noexcept          : std::unique_ptr<T[]>(std::move(m)), _dim(m._dim)  {std::swap(m._rows, this->_rows);};
 		explicit matrix(MATRIXINITTYPE IT) ;
+		explicit matrix(const array& arr)  : std::unique_ptr<T[]>(new T[N*N]), _dim(N)  { _copy(arr); };
+		matrix(const matrix& m)   : std::unique_ptr<T[]>(new T[m._dim*m._dim]) { _copy(m); }; // copy ctor
+		matrix(matrix&& m)noexcept         : std::unique_ptr<T[]>(), _dim(0)   { _move(m);};  // move ctor
 
-		inline T* operator [](size_t i)      { return get() + i*_dim; };
-
-		friend std::ostream& operator<< <>(std::ostream& out, const matrix& a);
+		inline T* operator [](size_t i)   { return _rows[i]; };
+		
 		inline matrix& operator= (const matrix& rhs) {
 			this->_copy(rhs); 
 			return *this;
 		}
+
 		inline matrix& operator= (matrix&& rhs) noexcept {
-			static_cast<std::unique_ptr<T[]>&>(*this) = std::move(rhs);
+			this->_move(rhs);
 			return *this;
 		}
 
@@ -106,6 +110,8 @@ namespace tens {
 		inline matrix scal(TRANSPOSE left, const matrix& rhs, TRANSPOSE right) const;
 		inline matrix transform(TRANSPOSE left, const matrix& op, TRANSPOSE right) const;
 		inline  T   convolution(const matrix<T, N>& rhs) const;
+		
+		friend std::ostream& operator<< <>(std::ostream& out, const matrix& a);
 	};
 
 	template<typename T, std::size_t N>
@@ -124,8 +130,6 @@ namespace tens {
 	template<typename T, std::size_t N>
 	void matrix<T, N>::set_zero() {
 		std::fill(this->get(), this->get() +  _dim*_dim, (T)0);
-		//std::memset(this->get(), (T)0, _dim*_dim);
-		//for (auto& row : *this->_Elem) row.fill((T)0);
 	}
 
 	template<typename T, std::size_t N>
@@ -133,14 +137,16 @@ namespace tens {
 		_set_rows();
 		switch (IT)
 		{
-		case MATRIXINITTYPE::ZERO  :		set_zero();
+		case MATRIXINITTYPE::ZERO  :		
+			set_zero();
 			return;
 		case MATRIXINITTYPE::INDENT:
 			set_zero();
 			for (size_t row = 0; row < N; row++) 
 				(*this)[row][row] = (T)1; 
 			return;
-		default:                     		set_zero();
+		default:                     		
+			set_zero();
 			return;
 		}
 		return;
@@ -303,12 +309,11 @@ namespace tens {
 					nhs[row][col] += (*this)[row][i] * rhs[i][col];
 
 		(*this) = nhs;
-		return (*this);
+		return *this;
 	}
 
 	template<typename T, std::size_t N>
 	std::ostream& operator<<(std::ostream& out, const matrix<T, N>& a) {
-		//const T* _raw_ptr = a.get();
 		for (size_t row = 0; row < N; row++){
 			for (size_t col = 0; col < N; col++){
 					out << a[row][col] << " ";

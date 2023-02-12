@@ -94,12 +94,13 @@ void test_matr(){
                          std::array<double, 3>{0.71039312225606, 0.46244483626, -0.530553324924}, 
                          std::array<double, 3>{0.6884578197422109, -0.3000210420111, 0.6603122514565999},
                          std::array<double, 3>{0.1461807039507, -0.834344859814, -0.5315060245959999}};
+        
         {
-            pass_tests += expect((ml*mr==matrix<double, 3>(ml_mul_mr)), "M1.M2 check");
+            pass_tests += expect((ml*mr==matrix<double, 3>(ml_mul_mr)), "M1.M2 check #1");
             all_tests++;
         }
         {
-            pass_tests += expect((mr*ml==matrix<double, 3>(mr_mul_ml)), "M2.M1 check");
+            pass_tests += expect((mr*ml==matrix<double, 3>(mr_mul_ml)), "M2.M1 check #2");
             all_tests++;
         }
         {
@@ -116,6 +117,11 @@ void test_matr(){
         }
         {
             pass_tests += expect(!ml.check_ort(), "M rand is not orthohonal");
+            all_tests++;
+        }
+        {
+            mr*=ml;
+            pass_tests += expect((mr==matrix<double, 3>(mr_mul_ml)), "M2.M1 check #3");
             all_tests++;
         }
 	    auto m_rand_ort = matrix<double, 3>(generate_rand_ort<double, 3>());{

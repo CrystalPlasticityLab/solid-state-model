@@ -17,6 +17,7 @@
                 "./tensor/test/test_vector.cpp",
                 "./tensor/test/test_matrix.cpp",
                 "./tensor/test/test_tensor.cpp",
+                "./tensor/test/test_leak.cpp",
                 "./tensor/test/test.cpp",
                 "./tensor/main.cpp"
             ],
