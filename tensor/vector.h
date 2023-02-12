@@ -8,7 +8,7 @@
 namespace tens {
 	template<typename T, size_t N>
 	class vector : private array<T, N>,
-				   private shared_handler_basis<T, N>
+				   public shared_handler_basis<T, N>
 	{
 		typedef  array   <T, N>              _vector;
 		typedef  matrix  <T, N>              _matrix;

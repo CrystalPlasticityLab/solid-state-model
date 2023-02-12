@@ -12,7 +12,7 @@ namespace tens {
 
 	template<typename T, size_t N>
 	class Tensor : private matrix<T, N>,
-				private shared_handler_basis<T, N>
+				   public shared_handler_basis<T, N>
 	{
 		typedef  matrix  <T, N>        _matrix;
 		typedef  shared_handler_basis<T, N> _handler;
