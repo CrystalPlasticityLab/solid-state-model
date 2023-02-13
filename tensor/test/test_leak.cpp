@@ -11,8 +11,8 @@ void test_leak(){
                 auto m1 = generate_rand<double, 3>();
                 auto m2 = generate_rand<double, 3>();
 
-                auto t11 = Tensor<double, 3>(m1, basis1);
-                auto t12 = Tensor<double, 3>(m2, basis1);
+                auto t11 = tensor<double, 3>(m1, basis1);
+                auto t12 = tensor<double, 3>(m2, basis1);
                 auto t21 = t11;
                 auto t31 = std::move(t21);
                 t11 = std::move(t12);

@@ -16,7 +16,7 @@ namespace tens {
 	template<typename T, size_t N>
 	class array : public std::unique_ptr<T[]>
 	{
-		size_t  _dim;
+		size_t  _dim = 0;
 		void _fill(const T& val){
 			for (size_t i = 0; i < N; i++){
 				(*this)[i] =  val;
@@ -52,7 +52,7 @@ namespace tens {
 		explicit array(const T& val)               : std::unique_ptr<T[]>(new T[N]), _dim(N) { this->_fill(val); }; // public ctor by const value
 		explicit array(const std::array<T,N>& arr) : std::unique_ptr<T[]>(new T[N]), _dim(N) { this->_copy(arr); }; // public ctor by astd::array
 		explicit array(const array&  a)            : std::unique_ptr<T[]>(new T[a._dim]), _dim(a._dim)  { this->_copy(a.get()); }; // copy ctor
-		array(array&& v)noexcept : std::unique_ptr<T[]>(std::move(v))         { }; // move ctor
+		array(array&& v)noexcept : std::unique_ptr<T[]>(std::move(v))         { this->_dim = v._dim; }; // move ctor
 
 		friend std::ostream& operator<< <>(std::ostream& out, const array& a);
 
@@ -63,6 +63,7 @@ namespace tens {
 		}
 
 		inline array& operator= (array&& rhs) noexcept {  // move assign operator
+			this->_dim = rhs._dim;
 			static_cast<std::unique_ptr<T[]>&>(*this) = std::move(rhs);
 			return *this;
 		}

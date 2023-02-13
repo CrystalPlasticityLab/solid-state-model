@@ -148,7 +148,7 @@ namespace tens {
 	}
 
 
-	// output component of Tensor at GLOBAL_DEFAULT_BASIS basis
+	// output component of tensor at GLOBAL_DEFAULT_BASIS basis
 	template<typename T, std::size_t N>
 	std::ostream& operator<<(std::ostream& out, const vector<T, N>& v) {
 		array<T, N> c = v.get_comp_at_basis(GLOBAL_DEFAULT_BASIS<T, N>);

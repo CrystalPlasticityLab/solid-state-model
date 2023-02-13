@@ -4,7 +4,7 @@
 #include "tensor/vector.h"
 #include "tensor/tensor.h"
 #include "tensor/quat.h"
-#include "state/state.h"
+#include "factory/factory.h"
 
 const size_t DIM = 3;
 std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -16,15 +16,19 @@ int main()
 	try
 	{
 		const auto b = create_basis(generate_rand_ort<double, 3>());
-		auto s = state::state<double, 3>(b);
-		for (size_t i = 0; i < 100; i++)
+		const auto b1 = create_basis(generate_rand_ort<double, 3>());
+		//for (size_t i = 0; i < 100; i++)
 		{
+			auto s = factory::state<double, 3>(b);
 			auto m = generate_rand<double, 3>();
 			auto a = array<double, 3>(ARRAYTTYPE::RANDOM);
-			auto t = s.add_object(m);
-			auto v = s.add_object(a);
+			s.push("matrix", m);
+			s.push("vector", a);
+			auto mp = s.get<tensor<double,3>>("matrix");
 
-			const auto x = 0.1;
+			std::cout << mp;
+			mp.move_to_basis(b1);
+			std::cout << mp;
 		}
 		
 		run_test();

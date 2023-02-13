@@ -14,12 +14,12 @@ void test_tensor(){
 
 	const auto basis1 = create_basis(generate_rand_ort<double, 3>());
 	const auto basis2 = create_basis(generate_rand_ort<double, 3>());
-    const auto t_zero1 = Tensor<double, 3>(m_zero, basis1);
-    const auto t_zero2 = Tensor<double, 3>(m_zero, basis2);
-    const auto t11 = Tensor<double, 3>(m1, basis1);
-    const auto t12 = Tensor<double, 3>(m2, basis1);
-    const auto t21 = Tensor<double, 3>(m1, basis2);
-    const auto t22 = Tensor<double, 3>(m2, basis2);
+    const auto t_zero1 = tensor<double, 3>(m_zero, basis1);
+    const auto t_zero2 = tensor<double, 3>(m_zero, basis2);
+    const auto t11 = tensor<double, 3>(m1, basis1);
+    const auto t12 = tensor<double, 3>(m2, basis1);
+    const auto t21 = tensor<double, 3>(m1, basis2);
+    const auto t22 = tensor<double, 3>(m2, basis2);
 
     {
         pass_tests += expect((t_zero1==t_zero2), "equal zero tensors");

@@ -7,10 +7,13 @@ namespace tens {
 		typedef  matrix<T, N> M;
 		typedef  std::shared_ptr <M> _shared;
 
+		shared_handler_basis() : _shared() {};
+		const shared_handler_basis& operator()() { return *this; };
+
 		static const shared_handler_basis<T, N> GLOBAL_DEFAULT_BASIS;
 		bool owner = false;
 	protected:
-		shared_handler_basis(const shared_handler_basis&  sh) : _shared(sh) {}; // to prevent multiply owning out of scope of vector/Tensor
+		shared_handler_basis(const shared_handler_basis&  sh) : _shared(sh) {}; // to prevent multiply owning out of scope of vector/tensor
 		shared_handler_basis(shared_handler_basis&& sh) noexcept  { move(static_cast<shared_handler_basis&&>(sh)); };
 		shared_handler_basis& operator = (const shared_handler_basis& sh) { _shared::operator=(sh); return *this; };
 		shared_handler_basis& operator = (shared_handler_basis&& sh) noexcept { return move(static_cast<shared_handler_basis&&>(sh));};
@@ -29,7 +32,6 @@ namespace tens {
 			owner = true;
 		}
 	public:
-
 		static shared_handler_basis<T,N> create_basis(const matrix<T, N>& m){
 			return shared_handler_basis<T,N>(m);
 		}

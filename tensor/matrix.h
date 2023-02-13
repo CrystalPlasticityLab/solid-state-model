@@ -73,7 +73,7 @@ namespace tens {
 		matrix(const matrix& m)   : std::unique_ptr<T[]>(new T[m._dim*m._dim]) { _copy(m); }; // copy ctor
 		matrix(matrix&& m)noexcept         : std::unique_ptr<T[]>(), _dim(0)   { _move(m);};  // move ctor
 
-		inline T* operator [](size_t i)   { return _rows[i]; };
+		inline T* operator [](size_t i) const { return _rows[i]; }; 
 		
 		inline matrix& operator= (const matrix& rhs) {
 			this->_copy(rhs); 
@@ -99,7 +99,7 @@ namespace tens {
 
 		virtual inline T   norm() const;
 		bool        check_ort() const;
-		inline matrix transpose();
+		inline matrix transpose() const;
 
 		friend void transpose(matrix& m) {
 			for (size_t row = 0; row < N; row++)
@@ -153,7 +153,7 @@ namespace tens {
 	}
 
 	template<typename T, std::size_t N>
-	matrix<T, N> matrix<T, N>::transpose() {
+	matrix<T, N> matrix<T, N>::transpose() const {
 		matrix<T, N> res(*this);
 		for (size_t row = 0; row < N; row++)
 			for (size_t col = row + 1; col < N; col++)
@@ -168,8 +168,9 @@ namespace tens {
 	}
 
 	template<typename T, size_t N>
-	bool matrix<T, N >::check_ort() const {
-		matrix<T, N> m = *this * this->transpose();
+	bool matrix<T, N>::check_ort() const {
+		const matrix<T, N>& t = *this;
+		matrix<T, N> m = t * this->transpose();
 		T diag = 0;
 		T nondiag = 0;
 		for (size_t row = 0; row < N; row++)
