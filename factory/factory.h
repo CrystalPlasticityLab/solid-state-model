@@ -18,63 +18,100 @@ namespace factory {
     };
 
     template<typename T, size_t N>
-    class factory : private shared_handler_basis<T, N>
-    {
-		typedef shared_handler_basis<T, N>  handler;
-    private:
-        factory() {};
-    protected:
-        tensor<T, N>* new_object(matrix<T, N>& m) {
-            return new tensor<T, N>(m, static_cast<const handler&>(*this));
-        }
-        vector<T, N>* new_object(array<T, N>& a) {
-            return new vector<T, N>(a, static_cast<const handler&>(*this));
-        }
-        factory(const handler& basis) : handler(basis) { };
-        ~factory() {};
-    public:
-    };
-
-
-    template<typename T, size_t N>
-    class state : protected factory<T, N>, 
-                  private std::unordered_map<const std::string, shared_handler_basis<T, N>*, StringHasher>
+    class state : private shared_handler_basis<T, N>,
+                  public std::unordered_map<const std::string, std::shared_ptr<shared_handler_basis<T, N>>, StringHasher>
     {
         typedef shared_handler_basis<T, N>  handler;
+        typedef std::shared_ptr<shared_handler_basis<T, N>>  handler_ptr;
+        typedef std::unordered_map<const std::string, std::shared_ptr<shared_handler_basis<T, N>>, StringHasher> map;
     private:
-        state() {};
-        void push(const std::string& name, handler* item) {
+        enum class TYPEOBJECT {
+            VECTOR,
+            TENSOR,
+            UNDEFINED
+        };
+        state() {}; 
+        TYPEOBJECT get_type_name(const std::string& name) {
+            if (name.find("tens::vector") != std::string::npos) { return TYPEOBJECT::VECTOR; }
+            if (name.find("tens::tensor") != std::string::npos) { return TYPEOBJECT::TENSOR; };
+            return TYPEOBJECT::UNDEFINED;
+        }
+
+        TYPEOBJECT get_type_name(const handler_ptr& obj) {
+            return get_type_name(typeid(*obj).name());
+        }
+        void push(const std::string& name, handler_ptr&& item) {
             if (this->find(name) != this->end()) {
                 throw ErrorAccess::Exists();
             };
-            this->insert({ name, item });
-        };
-        state(const state& s) { }; // copy ctor
-        state(state&& m)noexcept { };  // move ctor
-        state& operator=(const state& s) {};  // copy assign
-        state& operator= (state&& rhs) noexcept { }; // move assign
-    public:
-        state(const handler& basis) : factory<T,N>(basis) {};
-        ~state() {
-            // TODO : does not work -> fix
-            for (auto it = this->begin(); it != this->end(); ++it) {
-                //delete it->second;
-                //std::cout << " " << it->first << ":" << *it->second;
-            }
+            this->insert({ name, std::move(item) });
         };
 
+        std::shared_ptr<tensor<T, N>> new_object(const matrix<T, N>& m) {
+            return std::make_shared<tensor<T, N>>(m, static_cast<const handler&>(*this));
+        }
+
+        std::shared_ptr<vector<T, N>> new_object(const array<T, N>& a) {
+            return std::make_shared<vector<T, N>>(a, static_cast<const handler&>(*this));
+        }
+
+        void _deep_copy(const map& s) {
+            auto& t = *this;
+            const auto& basis = static_cast<const handler&>(*this);
+            for (auto const& [key, val] : s) {
+                TYPEOBJECT type = get_type_name(val);
+                if (type == TYPEOBJECT::VECTOR){
+                    t[key] = new_object(static_cast<const vector<T, N>&>(*val).get_comp_at_basis(basis));
+                }
+                if (type == TYPEOBJECT::TENSOR) {
+                    t[key] = new_object(static_cast<const tensor<T, N>&>(*val).get_comp_at_basis(basis));
+                }
+            }
+        }
+
+    public:
+        state(const handler& basis) {
+            handler::_deep_copy(basis);
+        };
+        state(const handler& basis, const state& s) {
+            handler::_deep_copy(basis);
+            state::_deep_copy(s);
+        };
+
+        state(const state& s) : handler(s), map(s) { // copy ctor
+            handler::_deep_copy(s);
+            state::_deep_copy(s);
+        }; 
+        state& operator= (const state& s) {  // copy assign
+            handler::_deep_copy(s);
+            state::_deep_copy(s);
+            return *this;
+        };
+
+        state(state&& s)noexcept : handler(std::move(s)), map(std::move(s)) { };  // move ctor
+
+        state& operator= (state&& rhs) noexcept {  // move assign
+            handler::operator = (static_cast<handler&&>(rhs));
+            map::operator = (static_cast<map&&>(rhs));
+            return *this;
+        };
+        ~state() {};
+
         void push(const std::string& name, array<T, N>& a) {
-            push(name, factory<T, N>::new_object(a));
+            push(name, new_object(a));
         };
 
         void push(const std::string& name, matrix<T, N>& m) {
-            push(name, factory<T, N>::new_object(m));
+            push(name, new_object(m));
         };
 
         template<typename type>
         type& get(const std::string& name) {
-            // TODO check type and item type
-            // throw ErrorAccess::WrongCast(); 
+            TYPEOBJECT t = get_type_name((*this)[name]);
+            if (typeid(*(*this)[name]).name() != typeid(type).name()) {
+                const std::string msg = std::string(typeid((*this)[name]).name()) + " to " + std::string(typeid(type).name());
+                throw ErrorAccess::WrongCast(msg);
+            }
             return static_cast<type&>(*(*this)[name]);
         }
     };

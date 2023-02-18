@@ -41,9 +41,14 @@ namespace ErrorAccess{
     };
 
     class WrongCast : public std::exception {
+        std::string msg;
     public:
+        WrongCast(const std::string& msg) {
+            this->msg = msg;
+        }
         virtual const char* what() const noexcept {
-            return ErrorMessage::WRONG_TYPE_CAST.c_str();
+            std::string response = ErrorMessage::WRONG_TYPE_CAST + msg;
+            return response.c_str();
         };
     };
 }

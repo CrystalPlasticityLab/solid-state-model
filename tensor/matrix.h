@@ -58,7 +58,7 @@ namespace tens {
 		}
 
 		void _set_rows(){
-			const T* ptr = this->get();
+			T* ptr = this->get();
 			for (size_t row = 0; row < _dim; row++){
 				_rows[row] = ptr + row*_dim;
 			}
@@ -70,7 +70,7 @@ namespace tens {
 		~matrix() { };
 		explicit matrix(MATRIXINITTYPE IT) ;
 		explicit matrix(const array& arr)  : std::unique_ptr<T[]>(new T[N*N]), _dim(N)  { _copy(arr); };
-		matrix(const matrix& m)   : std::unique_ptr<T[]>(new T[m._dim*m._dim]) { _copy(m); }; // copy ctor
+		matrix(const matrix& m)            : std::unique_ptr<T[]>(new T[m._dim*m._dim]) { _copy(m); }; // copy ctor
 		matrix(matrix&& m)noexcept         : std::unique_ptr<T[]>(), _dim(0)   { _move(m);};  // move ctor
 
 		inline T* operator [](size_t i) const { return _rows[i]; }; 

@@ -16,9 +16,10 @@ namespace tens {
 	{
 		typedef  matrix  <T, N>        _matrix;
 		typedef  shared_handler_basis<T, N> _handler;
+	protected:
+		virtual void       move_to_basis(const _handler& m) override { shared_handler_basis<T, N>::move_to_basis(m); };
+		virtual void       change_basis(const _handler& m) override;
 	public:
-		virtual void       move_to_basis   (const _handler& m) override { shared_handler_basis<T, N>::move_to_basis(m); };
-		virtual void       change_basis     (const _handler& m) override;
 		matrix<T, N>       get_comp_at_basis(const _handler& m) const; // calc comp of this at basis
 
 		tensor(const _matrix& comp, const _handler& basis) : _matrix(comp), _handler(basis) {};
