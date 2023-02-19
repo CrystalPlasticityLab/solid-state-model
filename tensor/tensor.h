@@ -11,17 +11,20 @@ namespace tens {
 	template<typename T, std::size_t N> tensor<T,N> outer_product (const vector<T, N>& lhs, const vector<T, N>& rhs);
 
 	template<typename T, size_t N>
-	class tensor : private matrix<T, N>,
-				   public shared_handler_basis<T, N>
+	class tensor : protected matrix<T, N>,
+				   public basis<T, N>
 	{
 		typedef  matrix  <T, N>        _matrix;
-		typedef  shared_handler_basis<T, N> _handler;
+		typedef  basis<T, N> _handler;
 	protected:
-		virtual void       move_to_basis(const _handler& m) override { shared_handler_basis<T, N>::move_to_basis(m); };
+		virtual void       move_to_basis(const _handler& m) override { basis<T, N>::move_to_basis(m); };
 		virtual void       change_basis(const _handler& m) override;
 	public:
-		matrix<T, N>       get_comp_at_basis(const _handler& m) const; // calc comp of this at basis
+		size_t get_rank() const override { return static_cast<const container<T,N>*>(this)->get_rank(); };
+		matrix<T, N>       get_comp_at_basis(const _handler& m) const; // calc comp of this at 
+		matrix<T, N>       get_comp_at_basis() const; // calc comp of this at global basis
 
+		tensor(const _matrix& comp, const _matrix& basis) : _matrix(comp), _handler(basis) {};
 		tensor(const _matrix& comp, const _handler& basis) : _matrix(comp), _handler(basis) {};
 		tensor(const  tensor&  tens) : _matrix(tens), _handler(static_cast<const _handler&>(tens)) {}; // copy constructor
 		tensor(tensor&& tens) noexcept : _matrix(static_cast<_matrix&&>(tens)), _handler(static_cast<_handler&&>(tens)) {}; // move constructor
@@ -77,17 +80,17 @@ namespace tens {
 
 	template<typename T, size_t N>
 	tensor<T, N>  tensor<T, N>::operator + (const tensor<T, N>& t) const {
-		return tensor<T, N>(matrix<T, N>::operator+(t.get_comp_at_basis(*this)), *this);
+		return tensor<T, N>(matrix<T, N>::operator+(t.get_comp_at_basis(*this)), static_cast<const _handler&>(*this));
 	}
 
 	template<typename T, size_t N>
 	tensor<T, N>  tensor<T, N>::operator - (const tensor<T, N>& t) const {
-		return tensor<T, N>(matrix<T, N>::operator-(t.get_comp_at_basis(*this)), *this);
+		return tensor<T, N>(matrix<T, N>::operator-(t.get_comp_at_basis(*this)), static_cast<const _handler&>(*this));
 	}
 
 	template<typename T, size_t N>
 	tensor<T, N>  tensor<T, N>::operator * (const tensor<T, N>& t) const  {
-		return tensor<T, N>(matrix<T, N>::operator*(t.get_comp_at_basis(*this)), *this);
+		return tensor<T, N>(matrix<T, N>::operator*(t.get_comp_at_basis(*this)), static_cast<const _handler&>(*this));
 	}
 
 	template<typename T, size_t N>
@@ -114,21 +117,28 @@ namespace tens {
 	}
 	/* return components of this in the target basis m*/
 	template<typename T, size_t N>
-	matrix<T, N> tensor<T, N>::get_comp_at_basis(const   shared_handler_basis<T, N>& m) const {
+	matrix<T, N> tensor<T, N>::get_comp_at_basis(const   basis<T, N>& m) const {
 		if (*this == m) {
 			return static_cast<matrix<T, N>> (*this);
 		}
 		else {
-			matrix<T, N> op   = *static_cast<const shared_handler_basis<T, N>*>(this)->get() * m.get()->transpose();
-			const matrix<T, N>& comp = static_cast<const matrix<T, N>&> (*this);
+			matrix<T, N> op   = *static_cast<const basis<T, N>*>(this)->get() * m.get()->transpose();
+			//const matrix<T, N>& comp = static_cast<const matrix<T, N>&> (*this);
 			return this->transform(TRANSPOSE::TRUE, op, TRANSPOSE::FALSE); // op^t * (*this) * op
 		}
 	}
 
+	/* return components of this in the target basis m*/
+	template<typename T, size_t N>
+	matrix<T, N> tensor<T, N>::get_comp_at_basis() const {
+		matrix<T, N> op = *static_cast<const basis<T, N>*>(this)->get();
+		return this->transform(TRANSPOSE::TRUE, op, TRANSPOSE::FALSE); // op^t * (*this) * op
+	}
+
 	template<typename T, size_t N>
 	tensor<T, N> outer_product(const vector<T, N>& _lhs, const vector<T, N>& _rhs){
-		tens::array<T, N> lhs = _lhs.get_comp_at_basis(GLOBAL_DEFAULT_BASIS<T, N>);
-		tens::array<T, N> rhs = _rhs.get_comp_at_basis(GLOBAL_DEFAULT_BASIS<T, N>);
+		tens::array<T, N> lhs = _lhs.get_comp_at_basis();
+		tens::array<T, N> rhs = _rhs.get_comp_at_basis();
 		matrix  <T, N> m = lhs.outer_product(rhs);
 		return tensor<T, N>(m, GLOBAL_DEFAULT_BASIS<T, N>);
 	}
@@ -136,7 +146,7 @@ namespace tens {
 	// output component of tensor at GLOBAL_DEFAULT_BASIS basis
 	template<typename T, std::size_t N>
 	std::ostream& operator<<(std::ostream& out, const tensor<T, N>& t) {
-		matrix<T, N> m = t.get_comp_at_basis(GLOBAL_DEFAULT_BASIS<T, N>);
+		matrix<T, N> m = t.get_comp_at_basis();
 		out << m;
 		return out;
 	};

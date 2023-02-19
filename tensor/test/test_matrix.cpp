@@ -8,7 +8,7 @@ void test_matr(){
     int pass_tests = 0;
     auto m_zero = matrix<double, 3>(MATRIXINITTYPE::ZERO);
     auto m_indent = matrix<double, 3>(MATRIXINITTYPE::INDENT);
-	auto m_rand = matrix<double, 3>(generate_rand<double, 3>());
+	auto m_rand = matrix<double, 3>::generate_rand();
     
     {
         pass_tests += expect((m_indent==m_indent), "I = I");

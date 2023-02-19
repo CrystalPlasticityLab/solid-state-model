@@ -1,3 +1,4 @@
+#pragma once
 #include "array.h"
 #include "vector.h"
 #include "quat.h"
@@ -18,9 +19,7 @@ template tens::matrix<double, 3> tens::generate_rand_ort();
 
 template<typename T, std::size_t N>
 tens::matrix<T, N> tens::generate_rand_ort() {
-	tens::array<T, 4> qvalue(0.0);
-	for (size_t row = 0; row < 4; row++) qvalue[row] = static_cast<T>(unidistr(gen));
-	quat<T> q(qvalue);
+	quat<T> q(tens::array<T,4>::generate_rand());
 	return static_cast<matrix<T, 3>>(q.get_ort_matrix());
 }
 

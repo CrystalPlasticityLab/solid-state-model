@@ -8,17 +8,19 @@
 namespace tens {
 	template<typename T, size_t N>
 	class vector : private array<T, N>,
-				   public shared_handler_basis<T, N>
+				   public basis<T, N>
 	{
 		typedef  array   <T, N>              _vector;
 		typedef  matrix  <T, N>              _matrix;
-		typedef  shared_handler_basis<T, N>  _handler;
+		typedef  basis<T, N>  _handler;
 	public:
-		virtual void       move_to_basis    (const _handler& m) override { shared_handler_basis<T, N>::move_to_basis(m); };
+		size_t get_rank() const override { return static_cast<const container<T, N>*>(this)->get_rank(); };
+		virtual void       move_to_basis    (const _handler& m) override { basis<T, N>::move_to_basis(m); };
 		virtual void       change_basis     (const _handler& m) override;
 		array<T, N>  get_comp_at_basis(const _handler& m) const; // calc comp of this at basis
 
-		vector(const _vector& comp, const _handler& basis) : _vector(comp), _handler(basis) {};
+		vector(const _vector& comp, const _handler& basis) : _vector(comp), _handler(basis) {}
+		vector(const _vector& comp, const _matrix& basis) : _vector(comp), _handler(basis) {};
 		vector(const  vector& vect)  : _vector(vect), _handler(vect) {}; // copy constructor
 		vector(vector&& vect) noexcept: _vector(static_cast<_vector&&>(vect)), _handler(static_cast<_handler&&>(vect))  {}; // move constructor
 

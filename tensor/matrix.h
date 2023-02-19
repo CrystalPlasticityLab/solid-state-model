@@ -4,9 +4,6 @@
 #include "container.h"
 
 extern const size_t DIM;
-extern std::random_device rd;  // Will be used to obtain a seed for the random number engine
-extern std::mt19937 gen;       // Standard mersenne_twister_engine seeded with rd()
-extern std::uniform_real_distribution<double> unidistr;
 
 namespace tens {
 	enum class MATRIXINITTYPE{
@@ -26,11 +23,10 @@ namespace tens {
 	template<typename T, std::size_t N> matrix<T, N> transpose();
 
 	template<typename T, std::size_t N>
-	class matrix : public std::unique_ptr<T[]>
+	class matrix : public container<T, N>
 	{
 		typedef  std::array<std::array<T, N>, N>  array;
 
-		size_t  _dim;
 		std::array<T*, N> _rows;
 		void set_zero();
 		
@@ -43,45 +39,47 @@ namespace tens {
 				}
 			}
 		}
-		
-		void _copy(const matrix& m){
-			this->_dim = m._dim;
-			memcpy(this->get(), m.get(), m._dim*m._dim*sizeof(T));
-			_set_rows();
-		}
 
 		void _move(matrix& _m){
 			matrix&& m = std::move(_m);
-			this->_dim = m._dim;
+			this->_dim = N;
 			static_cast<std::unique_ptr<T[]>&>(*this) = std::move(m);
 			std::swap(m._rows, this->_rows);
 		}
 
 		void _set_rows(){
 			T* ptr = this->get();
-			for (size_t row = 0; row < _dim; row++){
-				_rows[row] = ptr + row*_dim;
+			for (size_t row = 0; row < N; row++){
+				_rows[row] = ptr + row * N;
 			}
 		}
 
-		matrix() : std::unique_ptr<T[]>(new T[N*N]), _dim(N) { _set_rows(); }; // default ctor
+		matrix() : container<T,N>(2) { _set_rows(); }; // default ctor
 	protected:
 	public:
 		~matrix() { };
 		explicit matrix(MATRIXINITTYPE IT) ;
-		explicit matrix(const array& arr)  : std::unique_ptr<T[]>(new T[N*N]), _dim(N)  { _copy(arr); };
-		matrix(const matrix& m)            : std::unique_ptr<T[]>(new T[m._dim*m._dim]) { _copy(m); }; // copy ctor
-		matrix(matrix&& m)noexcept         : std::unique_ptr<T[]>(), _dim(0)   { _move(m);};  // move ctor
+		matrix(const matrix& m) : container<T, N>(static_cast<const container<T, N>&>(m)) { _set_rows(); };
+		matrix(matrix&& m) noexcept : container<T, N>(static_cast<container<T, N>&&>(m)) { _set_rows(); std::swap(m._rows, this->_rows);};
+		explicit matrix(const array& arr) : container<T, N>(2) { _copy(arr); };
+
+		static matrix generate_rand() {
+			matrix<T, N> m;
+			m.fill_rand();
+			return m;
+		};
 
 		inline T* operator [](size_t i) const { return _rows[i]; }; 
 		
 		inline matrix& operator= (const matrix& rhs) {
-			this->_copy(rhs); 
+			container<T,N>::operator = (static_cast<const container<T, N>&>(rhs));
+			this->_rows = rhs._rows;
 			return *this;
 		}
 
 		inline matrix& operator= (matrix&& rhs) noexcept {
-			this->_move(rhs);
+			container<T, N>::operator = (static_cast<container<T, N>&&>(rhs));
+			std::swap(rhs._rows, this->_rows);
 			return *this;
 		}
 
@@ -115,25 +113,12 @@ namespace tens {
 	};
 
 	template<typename T, std::size_t N>
-	matrix<T, N> generate_rand_ort();
-
-	template<typename T, std::size_t N>
-	matrix<T, N> generate_rand() {
-		std::array<std::array<T, N>, N> a;
-		for (size_t row = 0; row < N; row++)
-			for (size_t col = 0; col < N; col++)
-				a[row][col] = static_cast<T>(unidistr(gen));
-		return matrix<T, N>(a);
-	};
-
-	
-	template<typename T, std::size_t N>
 	void matrix<T, N>::set_zero() {
-		std::fill(this->get(), this->get() +  _dim*_dim, (T)0);
+		std::fill(this->get(), this->get() +  N*N, (T)0);
 	}
 
 	template<typename T, std::size_t N>
-	matrix<T, N>::matrix(MATRIXINITTYPE IT) : std::unique_ptr<T[]>(new T[N*N]), _dim(N) {
+	matrix<T, N>::matrix(MATRIXINITTYPE IT) : container<T, N>(2) {
 		_set_rows();
 		switch (IT)
 		{
