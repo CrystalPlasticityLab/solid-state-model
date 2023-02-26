@@ -28,9 +28,9 @@ namespace tens {
 
 		static const matrix<T, N> GLOBAL_DEFAULT_BASIS;
 		bool owner = false;
-		size_t state = (size_t)this;
+		//size_t state = (size_t)this;
 	protected:
-		size_t get_state() { return (size_t)state; };
+		//size_t get_state() { return (size_t)state; };
 		basis() : _shared() {};
 		basis(const basis&  sh) : _shared(sh) {}; // to prevent multiply owning out of scope of vector/tensor
 		basis(basis&& sh) noexcept  { _move(static_cast<basis&&>(sh)); };
@@ -60,7 +60,7 @@ namespace tens {
 		/* NOTE: not change object: just recalc components*/
 		virtual void    change_basis(const basis& m) { set_basis(m); }; // must be overrided in chldren classes
 	public:
-		virtual size_t get_rank() const  = 0;
+		virtual size_t get_rank() const {return 0;};
 
 		static basis<T,N> create_basis(const matrix<T, N>& m){
 			return basis<T,N>(m);

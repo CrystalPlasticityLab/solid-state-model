@@ -1,3 +1,4 @@
+#pragma once
 #include "tensor/test/expect.h"
 #include "tensor/test/test.h"
 #include "tensor/basis.h"
@@ -15,20 +16,70 @@ int main()
 {
 	try
 	{
-		const auto b = create_basis(generate_rand_ort<double, 3>());
-		const auto b1 = create_basis(generate_rand_ort<double, 3>());
+		auto c = tens::container<double, 3>(2);
+		auto a3 = tens::container_array<double, 3>(0);
+		auto x = a3 * a3;
+		auto m1 = tens::container_matrix<double, 3>(0);
+		auto m2 = tens::container_matrix<double, 3>(0);
+		auto pm1 = std::make_shared<tens::container_matrix<double, 3>>(m1);
+		//auto y = a3 * m1;
+		auto v1 = tens::container_vector<double, 3>(a3, m1);
+		auto v2 = tens::container_vector<double, 3>(a3, pm1);
+		auto v3 = v1;
+		auto v5 = std::move(v1);
+		auto v4 = tens::container_vector<double, 3>(a3, m1);
+		auto t1 = tens::container_tensor<double, 3>(m1, m2);
+		auto t2 = tens::container_tensor<double, 3>(m1, pm1);
+		auto res = m1 * m1;
+		auto m1t = transpose(m1);
+		auto vres = v4 * v3;
+		auto tvres2 = v4 * t1;
+		t1 = t2*t2;
+		t2 = std::move(t1); 
+		//double x = a1 * a2;
+		//auto c3 = c1 += c2 * c1;
+		auto cb = std::move(c);
+		//std::cout << cb[8];
+		c = std::move(cb);
+		//const auto b = basis<double, 3>::create_basis_random();
+		//const auto b1 = basis<double, 3>::create_basis_random();
+		auto b = generate_rand_ort<double,3>();
+
+		auto m = matrix<double, 3>::generate_rand();
+		auto o1 = object<double, 3>(m, b);
+		auto o2 = object<double, 3>(m, b);
+
+		tensor<double, 3> t(m,b);
+		std::shared_ptr<basis<double, 3>> tp;
+		{
+			auto a = new array<double, 3>(ARRAYTTYPE::RANDOM);
+			auto s = new factory::state<double, 3>(b);
+			s->push("matrix", &m);
+			s->push("vector", a);
+			t = s->get<tensor<double, 3>>("matrix");
+			tp = (*s)["matrix"];// s->get<tensor<double, 3>>("matrix");
+			delete s;
+			m = m;
+		}
 		//for (size_t i = 0; i < 100; i++)
 		{
-			auto s = factory::state<double, 3>(b);
-			auto m = generate_rand<double, 3>();
-			auto a = array<double, 3>(ARRAYTTYPE::RANDOM);
-			s.push("matrix", m);
-			s.push("vector", a);
-			auto mp = s.get<tensor<double,3>>("matrix");
+			//auto m = generate_rand<double, 3>();
+			auto a = new array<double, 3>(ARRAYTTYPE::RANDOM);
+			auto s = new factory::state<double, 3>(b);
+			s->push("matrix", &m);
+			s->push("vector", a);
+			auto s_copy = *s;
+			std::swap(s_copy, *s);
+			auto s_move = std::move(s_copy);
+			s_copy = std::move(s_move);
+			auto t = s->get<tensor<double,3>>("matrix");
+			//auto mq = s["matrix"];
 
-			std::cout << mp;
-			mp.move_to_basis(b1);
-			std::cout << mp;
+			std::cout << t;
+			//mp.move_to_basis(b1);
+			std::cout << t;
+			delete s;
+			delete a;
 		}
 		
 		run_test();
