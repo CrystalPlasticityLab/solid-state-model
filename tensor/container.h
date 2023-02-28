@@ -103,6 +103,8 @@ namespace tens {
 		size_t get_dim() const { return _dim; };
 		size_t get_size() const { return _size; };
 
+		container_rank(std::unique_ptr<T[]>&& pointer) : std::unique_ptr<T[]>(std::move(pointer)), _dim(N), _size((size_t)pow(N, R)) {
+		};
 
 		container_rank() : std::unique_ptr<T[]>(new T[(size_t)pow(N, R)]), _dim(N), _size((size_t)pow(N, R)) {
 		};
@@ -222,6 +224,19 @@ namespace tens {
 			nhs[8] = lhs[8] * rhs[0] + lhs[3] * rhs[7] + lhs[1] * rhs[8];
 			return nhs;
 		}
+		static friend container_matrix<T, 3> _mat_scal_mat_transp_dim_3(const container_matrix<T, 3>& lhs, const container_matrix<T, 3>& rhs) {
+			container_matrix<T, N> nhs;
+			nhs[0] = lhs[0] * rhs[0] + lhs[4] * rhs[7] + lhs[5] * rhs[8];
+			nhs[1] = lhs[1] * rhs[1] + lhs[8] * rhs[5] + lhs[3] * rhs[6];
+			nhs[2] = lhs[2] * rhs[2] + lhs[6] * rhs[3] + lhs[7] * rhs[4];
+			nhs[3] = lhs[3] * rhs[2] + lhs[1] * rhs[3] + lhs[8] * rhs[4];
+			nhs[4] = lhs[4] * rhs[2] + lhs[5] * rhs[3] + lhs[0] * rhs[4];
+			nhs[5] = lhs[5] * rhs[1] + lhs[0] * rhs[5] + lhs[4] * rhs[6];
+			nhs[6] = lhs[6] * rhs[1] + lhs[7] * rhs[5] + lhs[2] * rhs[6];
+			nhs[7] = lhs[7] * rhs[0] + lhs[2] * rhs[7] + lhs[6] * rhs[8];
+			nhs[8] = lhs[8] * rhs[0] + lhs[3] * rhs[7] + lhs[1] * rhs[8];
+			return nhs;
+		}
 		static friend container_array<T, N> _mat_scal_vec_dim_3(const container_matrix<T, N>& m, const container_array<T, N>& a) {
 			container_array<T, N> nhs;
 			nhs[0] = a[0] * m[0] + a[2] * m[4] + a[1] * m[5];
@@ -241,6 +256,12 @@ namespace tens {
 		container_matrix() {};
 		container_matrix(const container_rank<T, N, 2>& cont) : container_rank<T, N, 2>(cont) {};
 		container_matrix(container_rank<T, N, 2>&& cont)noexcept : container_rank<T, N, 2>(std::move(cont)){};
+
+		friend container_matrix<T, N> mat_scal_mat_transp(const container_matrix<T, N>& lhs, const container_matrix<T, N>& rhs) {
+			if (N == 3) {
+				return _mat_scal_mat_transp_dim_3(lhs, rhs);
+			}
+		}
 		friend container_matrix<T, N> operator * (const container_matrix<T, N>& lhs, const container_matrix<T, N>& rhs) {
 			if (N == 3) {
 				return _mat_scal_mat_dim_3(lhs, rhs);
@@ -281,30 +302,30 @@ namespace tens {
 		std::shared_ptr<container_matrix<T, N>> _basis;
 
 		void _copy(const basis_object<T, N, R>& src) {
-			if (_basis == nullptr) {
+			if (_basis == nullptr) { // it has no basis, so we create it
 				_comp = std::make_unique<container_rank<T, N, R>>(container_rank<T, N, R>(*src._comp));
 				_basis = std::make_shared<container_matrix<T, N>>(container_matrix<T, N>(*src._basis));
-			} else {
-				if (_basis == src._basis) {
+			} else { // has basis, recalc comp at this basis
+				if (_basis == src._basis) { // basis is the samem just copy comp
 					*_comp = *src._comp;
-				} else {
+				} else { // other basis - recalc comp
 					*_comp = src.get_comp_at_basis(_basis);
 				}
 			}
 		}
 
 		void _move(basis_object<T, N, R>&& src) {
-			if (_basis == nullptr) {
+			if (_basis == nullptr) { // it has no basis, so move all
 				_comp = std::move(src._comp);
 				_basis = std::move(src._basis);
-			} else {
-				if (_basis == src._basis) {
+			} else { // has basis
+				if (_basis == src._basis) { // the same => move
 					_comp = std::move(src._comp);
-				}else {
+				}else { // recalc comp and reset src
 					*_comp = src.get_comp_at_basis(_basis);
 					src._comp.reset();
 				}
-				src._basis.reset();
+				src._basis.reset(); // reset src basis
 			}
 		}
 
@@ -335,8 +356,13 @@ namespace tens {
 			_reset_basis(pbasis);
 		}
 		virtual size_t get_rank() = 0;
-		const container_rank<T, N, R>& get_comp_ref() const {
+		container_rank<T, N, R>& get_comp_ref() const {
 			return *this->_comp;
+		}
+
+		//container_matrix<T, N> op = mat_scal_mat_transp(*this->get_basis_ref(), *basis.get());// Rl* RrT;
+		container_matrix<T, N> get_transform(const std::shared_ptr<container_matrix<T, N>>& basis) const {
+			return mat_scal_mat_transp(*this->_basis, *basis);
 		}
 	public:
 
@@ -387,16 +413,13 @@ namespace tens {
 		};
 
 		virtual container_rank<T, N, 1> get_comp_at_basis(const std::shared_ptr<container_matrix<T, N>>& basis) const override {
-			const auto& basis_new = basis;
-			const auto& basis_cur = this->get_basis_ref();
 			const container_array<T, N>& comp = static_cast<const container_array<T, N>&>(this->get_comp_ref());
-			if (basis_new == basis_cur) {
+			if (basis == this->get_basis_ref()) {
 				return comp;
 			}
 			else {
-				const container_matrix<T, N>& Rl = *this->get_basis_ref();
-				const container_matrix<T, N>& Rr = transpose(*basis.get());
-				return static_cast<container_rank<T, N, 1>>((comp * Rl) * Rr);
+				container_matrix<T, N> op = this->get_transform(basis);
+				return static_cast<container_rank<T, N, 1>>(comp * op); // (*this) * op
 			}
 		}
 	public:
@@ -411,12 +434,6 @@ namespace tens {
 		template <size_t R>
 		container_vector(const container_array<T, N>& comp, const basis_object<T, N, R>& object) : basis_object<T, N, 1>(comp, object.get_basis_ref()) {};
 
-		friend T operator * (const container_vector<T, N>& lhs, const container_vector<T, N>& rhs) {
-			const container_array<T, N>& lhsa = static_cast<const container_array<T, N>&>(lhs.get_comp_ref());
-			const container_array<T, N>& rhsa = static_cast<const container_array<T, N>&>(rhs.get_comp_at_basis(lhs.get_basis_ref()));// container_array<T, N>(std::move(rhs.get_comp_at_basis(lhs)));
-			return  lhsa * rhsa;
-		}
-
 		container_vector& operator = (const container_vector& rhs) {
 			return static_cast<container_vector&>(basis_object<T, N, 1>::operator=(static_cast<const basis_object<T, N, 1>&>(rhs)));
 		};
@@ -424,6 +441,31 @@ namespace tens {
 		container_vector& operator = (container_vector&& rhs) noexcept {
 			return static_cast<container_vector&>(basis_object<T, N, 1>::operator=(static_cast<basis_object<T, N, 1>&&>(rhs)));
 		};
+
+		container_vector& operator *= (const T& mul) {
+			this->get_comp_ref() *= mul;
+			return *this;
+		}
+
+		container_vector& operator += (const container_vector<T, N>& rhs) {
+			this->get_comp_ref() += rhs.get_comp(this->get_basis_ref());
+			return *this;
+		}
+
+		friend container_vector<T,N> operator + (const container_vector<T, N>& lhs, const container_vector<T, N>& rhs) {
+			const container_array<T, N>& lcomp = static_cast<const container_array<T, N>&>(lhs.get_comp_ref());
+			return container_vector<T, N>(lcomp + rhs.get_comp(lhs.get_basis_ref()), lhs.get_basis_ref());
+		}
+
+		friend container_vector<T, N> operator - (const container_vector<T, N>& lhs, const container_vector<T, N>& rhs) {
+			const container_array<T, N>& lcomp = static_cast<const container_array<T, N>&>(lhs.get_comp_ref());
+			return container_vector<T, N>(lcomp - rhs.get_comp(lhs.get_basis_ref()), lhs.get_basis_ref());
+		}
+
+		friend T operator * (const container_vector<T, N>& lhs, const container_vector<T, N>& rhs) {
+			const container_array<T, N>& lcomp = static_cast<const container_array<T, N>&>(lhs.get_comp_ref());
+			return lcomp * rhs.get_comp(lhs.get_basis_ref());
+		}
 	};
 
 	template<typename T, size_t N>
@@ -434,15 +476,11 @@ namespace tens {
 		};
 
 		virtual container_rank<T, N, 2> get_comp_at_basis(const std::shared_ptr<container_matrix<T, N>>& basis) const override {
-			const auto basis_new = basis;
-			const auto basis_cur = this->get_basis_ref();
 			const container_matrix<T, N>& comp = static_cast<const container_matrix<T, N>&>(this->get_comp_ref());
-			if (basis_new == basis_cur) {
+			if (basis == this->get_basis_ref()) {
 				return comp;
 			} else {
-				const container_matrix<T, N>& Rl = *this->get_basis_ref();
-				const container_matrix<T, N>& Rr = transpose(*basis.get());
-				container_matrix<T, N> op = Rl*Rr;
+				container_matrix<T, N> op = this->get_transform(basis);
 				return container_rank<T, N, 2>(transpose(op) * comp * op);// op^t * (*this) * op
 			}
 		}
@@ -457,7 +495,7 @@ namespace tens {
 		template <size_t R>
 		container_tensor(const container_matrix<T, N>& comp, const basis_object<T, N, R>& object) : basis_object<T, N, 2>(comp, object.get_basis_ref()) {};
 
-		friend container_tensor<T, N> operator * (const container_tensor<T, N>& lhs, const container_tensor<T, N>& rhs) {
+		friend container_tensor<T, N> operator * (const container_tensor<T, N>& lhs, const container_tensor<T, N>& rhs) { // TODO ???
 			const container_matrix<T, N>& lhsa = static_cast<const container_matrix<T, N>&>(lhs.get_comp_ref());
 			if (lhs.get_basis_ref() == rhs.get_basis_ref()) {
 				const container_matrix<T, N>& rhsa = static_cast<const container_matrix<T, N>&>(rhs.get_comp_ref());
