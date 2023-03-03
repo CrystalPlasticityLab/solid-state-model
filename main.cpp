@@ -14,27 +14,37 @@ extern std::uniform_real_distribution<double> unidistr = std::uniform_real_distr
 
 int main() 
 {
+	using namespace tens;
 	try
 	{
+		auto basis = create_basis<double, 3>();
 		auto c = tens::container<double, 3>(2);
 		auto a3 = tens::container_array<double, 3>(0);
-		auto x = a3 * a3;
-		auto m1 = tens::container_matrix<double, 3>(0);
-		auto m2 = tens::container_matrix<double, 3>(0);
-		auto pm1 = std::make_shared<tens::container_matrix<double, 3>>(m1);
+		auto m1 = Basis<double, 3>(0);
+		auto m2 = Basis<double, 3>(0);
+		auto pm1 = std::make_shared<Basis<double, 3>>(m1);
 		//auto y = a3 * m1;
-		auto v1 = tens::container_vector<double, 3>(a3, m1);
-		auto v2 = tens::container_vector<double, 3>(a3, pm1);
+		auto v1 = Vector<double, 3>(a3, m1);
+		auto v2 = Vector<double, 3>(a3, pm1);
 		auto v3 = v1;
 		auto v5 = std::move(v1);
-		auto v4 = tens::container_vector<double, 3>(a3, m1);
-		auto t1 = tens::container_tensor<double, 3>(m1, m2);
-		auto t2 = tens::container_tensor<double, 3>(m1, pm1);
+		auto v4 = Vector<double, 3>(a3, m1);
+		auto t1 = Tensor<double, 3>(m1, m2);
+		auto t2 = Tensor<double, 3>(m1, pm1);
 		auto res = m1 * m1;
 		auto m1t = transpose(m1);
-		auto vres = v4 * v3;
+		auto vres = v4 + v3;
+		v1 = v4 - v3;
+		v1 = v4 + v3;
 		auto tvres2 = v4 * t1;
-		t1 = t2*t2;
+		t1 = t2 * t2;
+		t1 = t2 * 2.0;
+		auto pbas = t2.get_basis_ref();
+		//bas = m2;
+		//auto vres2 = v4 * v3;
+		auto vc = get_comp(v3);
+		auto tc = get_comp(t1);
+		v3 += v4;
 		t2 = std::move(t1); 
 		//double x = a1 * a2;
 		//auto c3 = c1 += c2 * c1;
@@ -50,7 +60,7 @@ int main()
 		auto o2 = object<double, 3>(m, b);
 
 		tensor<double, 3> t(m,b);
-		std::shared_ptr<basis<double, 3>> tp;
+/*		std::shared_ptr<basis<double, 3>> tp;
 		{
 			auto a = new array<double, 3>(ARRAYTTYPE::RANDOM);
 			auto s = new factory::state<double, 3>(b);
@@ -81,7 +91,7 @@ int main()
 			delete s;
 			delete a;
 		}
-		
+		*/
 		run_test();
 	}
 	catch(const std::exception& e)
