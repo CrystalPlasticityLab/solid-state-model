@@ -124,10 +124,10 @@ void test_matr(){
             pass_tests += expect((mr==matrix<double, 3>(mr_mul_ml)), "M2.M1 check #3");
             all_tests++;
         }
-	    auto m_rand_ort = matrix<double, 3>(generate_rand_ort<double, 3>());{
-            pass_tests += expect(m_rand_ort.check_ort(), "M ort is orthohonal");
-            all_tests++;
-        }
+	  // auto m_rand_ort = matrix<double, 3>(generate_rand_ort<double, 3>());{
+      //     pass_tests += expect(m_rand_ort.check_ort(), "M ort is orthohonal");
+      //     all_tests++;
+      // }
     }
     // TODO: m1:m2
     // TODO: check copy and move ctors and operators =

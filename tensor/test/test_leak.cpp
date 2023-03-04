@@ -20,8 +20,8 @@ void test_leak(){
                 t11 = std::move(t12);
             }
             {
-                auto a1 = array<double, 3>(ARRAYTTYPE::RANDOM);
-                auto a2 = array<double, 3>(ARRAYTTYPE::RANDOM);
+                auto a1 = array<double, 3>(ARRAY_TYPE::RANDOM);
+                auto a2 = array<double, 3>(ARRAY_TYPE::RANDOM);
                 auto v11 = vector<double, 3>(a1, b1);
                 auto v12 = vector<double, 3>(a2, b1);
                 auto v21 = v11;

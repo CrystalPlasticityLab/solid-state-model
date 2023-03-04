@@ -4,11 +4,7 @@
 
 namespace tens {
 
-	enum class ARRAYTTYPE{
-		ZERO,
-		RANDOM,
-		RANDOMUNIT
-	};
+
 
 	template<typename T, std::size_t N> class array;
 	template<typename T, std::size_t N> std::ostream& operator<< (std::ostream& o, const array<T, N>& v);
@@ -27,7 +23,7 @@ namespace tens {
 		};
 	public:
 		~array() { };
-		explicit array(ARRAYTTYPE AT);
+		explicit array(ARRAY_TYPE AT);
 		explicit array(const T& val) : container<T, N>(1) { container<T, N>::fill_value(T(0)); };
 		explicit array(const std::array<T, N>& arr) : container<T, N>(1) { this->_copy(arr); };
 		explicit array(const array& a) : container<T, N>(static_cast<const container<T, N>&>(a)) {};
@@ -100,16 +96,16 @@ namespace tens {
 	};
 
 	template<typename T, std::size_t N>
-	array<T, N>::array(ARRAYTTYPE AT) :container<T,N>(1) {
+	array<T, N>::array(ARRAY_TYPE AT) :container<T,N>(1) {
 		switch (AT)
 		{
-		case ARRAYTTYPE::ZERO:		
+		case ARRAY_TYPE::ZERO:		
 			container<T, N>::fill_value((T)0);
 			return;
-		case ARRAYTTYPE::RANDOM: 
+		case ARRAY_TYPE::RANDOM: 
 			container<T, N>::fill_rand();
 			return;
-		case ARRAYTTYPE::RANDOMUNIT:
+		case ARRAY_TYPE::RANDOMUNIT:
 			container<T, N>::fill_rand();
 			normalize();
 			return;

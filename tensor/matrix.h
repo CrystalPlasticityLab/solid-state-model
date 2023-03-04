@@ -19,7 +19,7 @@ namespace tens {
 
 	template<typename T, std::size_t N> class matrix;
 	template<typename T, std::size_t N> std::ostream& operator<< (std::ostream& o, const matrix<T,N>& m);
-	template<typename T, std::size_t N> matrix<T, N> generate_rand_ort();
+	//template<typename T, std::size_t N> matrix<T, N> generate_rand_ort();
 	template<typename T, std::size_t N> matrix<T, N> transpose();
 
 	template<typename T, std::size_t N>

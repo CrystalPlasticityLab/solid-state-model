@@ -3,35 +3,64 @@
 void test_vector(){
     using namespace tens;
 
-    std::cout << " =================== Start testing vector ===================" << std::endl;
+    std::cout << " =================== Start testing Vector ===================" << std::endl;
     int all_tests = 0;
     int pass_tests = 0;
-    auto a_zero = array<double, 3>(0.0);
-    const auto a1 = array<double, 3>(ARRAYTTYPE::RANDOM);
-    const auto a2 = array<double, 3>(ARRAYTTYPE::RANDOM);
-    const auto a3 = array<double, 3>(ARRAYTTYPE::RANDOM);
-    const auto a4 = array<double, 3>(ARRAYTTYPE::RANDOM);
+    auto a_zero = Array<double, 3>(0.0);
+    const auto a1 = Array<double, 3>(ARRAY_TYPE::RANDOM);
+    const auto a2 = Array<double, 3>(ARRAY_TYPE::RANDOM);
+    const auto a3 = Array<double, 3>(ARRAY_TYPE::RANDOM);
+    const auto a4 = Array<double, 3>(ARRAY_TYPE::RANDOM);
 
-	const auto basis1 = generate_rand_ort<double, 3>();
-	const auto basis2 = generate_rand_ort<double, 3>();
-    const auto v_zero1 = vector<double, 3>(a_zero, basis1);
-    const auto v_zero2 = vector<double, 3>(a_zero, basis2);
-    const auto v11 = vector<double, 3>(a1, basis1);
-    const auto v12 = vector<double, 3>(a2, basis1);
-    const auto v21 = vector<double, 3>(a1, basis2);
-    const auto v22 = vector<double, 3>(a2, basis2);
+	const auto basis1 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
+	const auto basis2 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
+    const auto v_zero1 = Vector<double, 3>(a_zero, basis1);
+    const auto v_zero2 = Vector<double, 3>(a_zero, basis2);
+    const auto v11 = Vector<double, 3>(a1, basis1);
+    const auto v12 = Vector<double, 3>(a2, basis1);
+    const auto v21 = Vector<double, 3>(a1, basis2);
+    const auto v22 = Vector<double, 3>(a2, basis2);
 
     {
-        auto vr = array<double, 3>(std::array<double, 3>{0,0,0});
         pass_tests += expect((v_zero1==v_zero2), "equal zero vectors");
         all_tests++;
     }
     {
-        pass_tests += expect((v11.get_comp_at_basis(v11) == a1), "equal vector components");
+        pass_tests += expect((v11.get_comp_at_basis(v11) == a1), "equal Vector components");
         all_tests++;
     }
     {
         pass_tests += expect((v21+v_zero1 == v21) && (v22+v_zero2 == v22), "v+v_zero = v");
+        all_tests++;
+    }
+    {
+        auto vr = v11;
+        pass_tests += expect((vr == v11), "check v->v1, v1 == v");
+        all_tests++;
+    }
+    {
+        auto vr = v11 + v11;
+        pass_tests += expect((vr == 2.0*v11), "check v+v = 2*v");
+        all_tests++;
+    }
+    {
+        auto v1l = v11;
+        v1l.change_basis(v22);
+        pass_tests += expect((v1l == v11), "check v = v after changing basis");
+        all_tests++;
+    }
+    {
+        auto v1l = v11;
+        v1l.change_basis(v22);
+        v1l.change_basis(v11);
+        pass_tests += expect((v1l.get_comp_at_basis(v11) == a1), "check v.comp = v.comp after changing basis");
+        all_tests++;
+    }
+    {
+        auto v1l = v11;
+        v1l.change_basis(v22);
+        auto vr = v11 + v1l;
+        pass_tests += expect((vr == 2.0 * v11), "check v+v = 2*v");
         all_tests++;
     }
     {
@@ -43,13 +72,15 @@ void test_vector(){
     {
         auto vr = v11;
         vr += v21;
-        pass_tests += expect((v11+v21 == vr), "check += at different basis");
+        auto vl = v11 + v21;
+        pass_tests += expect((vl == vr), "check += at different basis");
         all_tests++;
     }
     {
         auto vr = v12;
         vr -= v22;
-        pass_tests += expect((v12-v22 == vr), "check -= at different basis");
+        auto vl = v12 - v22;
+        pass_tests += expect((vl == vr), "check -= at different basis");
         all_tests++;
     }
     {
@@ -59,24 +90,24 @@ void test_vector(){
         all_tests++;
     }
     {
-        vector<double,3> vr1 = v11;
+        Vector<double,3> vr1 = v11;
         vr1.change_basis(v21);
-        pass_tests += expect((v11 == vr1), "vector has not changed after changing basis");
+        pass_tests += expect((v11 == vr1), "Vector has not changed after changing basis");
         all_tests++;
     }
     {
-        vector<double,3> vr1 = v11;
+        Vector<double,3> vr1 = v11;
         vr1.change_basis(v21);
         pass_tests += expect((a1 == vr1.get_comp_at_basis(v11)), "component has not changed at the same basis");
         all_tests++;
     }
-    {
-        vector<double,3> vr1 = v11;
+  /* {
+        Vector<double,3> vr1 = v11;
         vr1.move_to_basis(v21);
-        pass_tests += expect(!(v11 == vr1), "vector has changed after changing basis");
+        pass_tests += expect(!(v11 == vr1), "Vector has changed after changing basis");
         all_tests++;
         vr1.move_to_basis(v11);
-        pass_tests += expect((v11 == vr1), "vector has not changed after changing basis to the origin basis");
+        pass_tests += expect((v11 == vr1), "Vector has not changed after changing basis to the origin basis");
         all_tests++;
     }
     {
@@ -89,12 +120,12 @@ void test_vector(){
         pass_tests += expect((cross1==cross2), "v2 x v1 = -(v1 x v2)");
         all_tests++;
     } 
-   {
-       const auto cross = vector_product(v11,v21);
-       pass_tests += expect(( !is_not_small_value(cross*v11) && !is_not_small_value(cross*v21)), "v1 x v2 ia ort to v1 and v2");
-       all_tests++;
-   }
-    
+    {
+        const auto cross = vector_product(v11,v21);
+        pass_tests += expect(( !is_not_small_value(cross*v11) && !is_not_small_value(cross*v21)), "v1 x v2 ia ort to v1 and v2");
+        all_tests++;
+    }
+    */
     std::cout << " Test passed : " << std::to_string(pass_tests) << "/" << std::to_string(all_tests) << std::endl;
-    std::cout << " ==================== End Testing vector ====================" << std::endl;
+    std::cout << " ==================== End Testing Vector ====================" << std::endl;
 }

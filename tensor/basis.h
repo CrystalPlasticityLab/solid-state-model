@@ -1,5 +1,4 @@
 #pragma once
-#include "matrix.h"
 #include "container.h"
 
 namespace tens {
@@ -7,8 +6,14 @@ namespace tens {
 	template<typename T, size_t N>
 	static std::shared_ptr<const Basis<T, N>> create_basis(const Basis<T, N>& basis);
 
+
+	enum class DEFAULT_ORTH_BASIS {
+		RANDOM,
+		INDENT
+	};
+
 	template<typename T, size_t N>
-	static std::shared_ptr<const Basis<T, N>> create_basis();
+	static std::shared_ptr<const Basis<T, N>> create_basis(DEFAULT_ORTH_BASIS type);
 
 	template<typename T, size_t N, size_t R>
 	class basis_object {
@@ -25,7 +30,7 @@ namespace tens {
 					*_comp = *src._comp;
 				}
 				else { // other basis - recalc comp
-					*_comp = src.get_comp_at_basis(_basis);
+					*_comp = src.get_comp_at_basis(*this);
 				}
 			}
 		}
@@ -36,11 +41,11 @@ namespace tens {
 				_basis = std::move(src._basis);
 			}
 			else { // has basis
-				if (_basis == src._basis) { // the same => move
+				if (_basis == src._basis) { // the same => move only comp
 					_comp = std::move(src._comp);
 				}
 				else { // recalc comp and reset src
-					*_comp = src.get_comp_at_basis(_basis);
+					*_comp = src.get_comp_at_basis(*this);
 					src._comp.reset();
 				}
 				src._basis.reset(); // reset src basis
@@ -54,14 +59,10 @@ namespace tens {
 
 	protected:
 
-		void change_basis(const std::shared_ptr<Basis<T, N>>& pbasis) {
-			_comp = this->get_comp_at_basis(pbasis);
-			_reset_basis(pbasis);
-		}
 		void move_basis(const std::shared_ptr<Basis<T, N>>& pbasis) {
 			_reset_basis(pbasis);
 		}
-
+		// R.Rt
 		Basis<T, N> get_transform(const std::shared_ptr<const Basis<T, N>>& basis) const {
 			return mat_scal_mat_transp(*this->_basis, *basis);
 		}
@@ -75,6 +76,11 @@ namespace tens {
 		}
 
 		basis_object(const container_rank<T, N, R>& comp, const Basis<T, N>& basis) {
+			_comp = std::make_unique<container_rank<T, N, R>>(comp);
+			_basis = create_basis(basis);
+		}
+
+		basis_object(const std::array<T, N>& comp, const Basis<T, N>& basis) {
 			_comp = std::make_unique<container_rank<T, N, R>>(comp);
 			_basis = create_basis(basis);
 		}
@@ -94,6 +100,11 @@ namespace tens {
 			_basis = std::move(basis);
 		}
 
+		basis_object(const std::array<T, N>& comp, const std::shared_ptr<const Basis<T, N>>& pbasis) {
+			_comp = std::make_unique<container_rank<T, N, R>>(comp);
+			_basis = pbasis;
+		}
+
 		basis_object(const container_rank<T, N, R>& comp, const std::shared_ptr<const Basis<T, N>>& pbasis) {
 			_comp = std::make_unique<container_rank<T, N, R>>(comp);
 			_basis = pbasis;
@@ -104,15 +115,28 @@ namespace tens {
 			_basis = pbasis;
 		}
 
+		void change_basis(const basis_object<T, N, R>& obj) {
+			change_basis(obj.get_basis_ref());
+		}
+
+		void change_basis(const std::shared_ptr<const Basis<T, N>>& pbasis) {
+			_comp = std::make_unique<container_rank<T, N, R>>(std::move(get_comp_at_basis(pbasis)));
+			_reset_basis(pbasis);
+		}
+
 		size_t get_rank() {	return R;};
 
+		container_rank<T, N, R> get_comp_at_basis(const basis_object<T, N, R>& obj) const {
+			return get_comp_at_basis(obj.get_basis_ref());
+		}
+
 		container_rank<T, N, R> get_comp_at_basis(const std::shared_ptr<const Basis<T, N>>& pbasis) const {
-			const auto& comp = this->get_comp_ref();
-			if (pbasis == this->get_basis_ref()) {
+			const auto& comp = get_comp_ref();
+			if (pbasis == get_basis_ref()) {
 				return comp;
 			}
 			else {
-				Basis<T, N> op = this->get_transform(pbasis);
+				Basis<T, N> op = get_transform(pbasis);
 				if (R == 1) {
 					return comp * op;
 				}
@@ -121,6 +145,7 @@ namespace tens {
 				}
 			}
 		}
+
 		const std::shared_ptr<const Basis<T, N>> get_basis_ref() const {
 			return this->_basis;
 		}
@@ -142,21 +167,24 @@ namespace tens {
 			return *this;
 		}
 
+		basis_object operator *= (const basis_object& rhs) {
+			*this = *this * rhs;
+			return *this;
+		}
+
 		basis_object operator += (const basis_object<T, N, R>& rhs) {
-			auto rhsa = rhs.get_comp_at_basis(this->_basis);
+			auto rhsa = rhs.get_comp_at_basis(*this);
 			*this->_comp += rhsa;
 			return *this;
 		}
 
-		static bool check_ort(const Basis<T, N>& m) {
-			container_rank<T, N, 2> I = m * transpose(m);
-			T diag = 0;
-			T nondiag = 0;
-			//for (size_t row = 0; row < N; row++)
-			//	for (size_t col = 0; col < N; col++)
-			//		(row == col) ? diag += m[row][row] : nondiag += m[row][col];
-			return (is_small_value<T>(abs(diag - (T)N) + abs(nondiag)) ? true : false);
+		basis_object operator -= (const basis_object<T, N, R>& rhs) {
+			auto rhsa = rhs.get_comp_at_basis(*this);
+			*this->_comp -= rhsa;
+			return *this;
 		}
+
+		static friend bool check_ort(const Basis<T, N>& m);
 
 		static friend T operator * <> (const basis_object<T, N, 1>& lhs, const  basis_object<T, N, 1>& rhs);
 		static friend basis_object<T, N, R> operator * <> (const basis_object<T, N, R>& lhs, const T& mul);
@@ -173,18 +201,49 @@ namespace tens {
 			_move(std::move(rhs));
 			return *this;
 		}
+
+		friend bool operator == (const basis_object<T, N, R>& lhs, const basis_object<T, N, R>& rhs) {
+			return lhs.get_comp_ref() == rhs.get_comp_at_basis(lhs.get_basis_ref());
+		}
+
+		friend static basis_object<T, N, R> transpose(const basis_object<T, N, R>& m) {
+			return basis_object<T, N, R>(transpose(m.get_comp_ref()), m.get_basis_ref());
+		}
 	};
 
+	template<typename T, size_t N, size_t R = 2>
+	static bool check_ort(const container_rank<T, N, 2>& m) {
+		container_rank<T, N, 2> I = m * transpose(m);
+		T diag = 0;
+		T nondiag = 0;
+		for (size_t diagIdx = 0; diagIdx < 3; diagIdx++)
+			diag += I[diagIdx];
+		for (size_t nonDiagIdx = 3; nonDiagIdx < 9; nonDiagIdx++)
+			nondiag += I[nonDiagIdx];
+		return (is_small_value<T>(abs(diag - (T)N) + abs(nondiag)) ? true : false);
+	}
+
 	template<typename T, size_t N>
-	static std::shared_ptr<const Basis<T, N>> create_basis() {
-		Basis<T, N> I;
-		//check_ort(I);
-		return std::make_shared<const Basis<T, N>>(I);
+	static std::shared_ptr<const Basis<T, N>> create_basis(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
+		Basis<T, N> Q;
+		switch (type)
+		{
+		case tens::DEFAULT_ORTH_BASIS::RANDOM:
+			Q = generate_rand_ort();
+			break;
+		default:
+		case tens::DEFAULT_ORTH_BASIS::INDENT:
+			Q = generate_indent_ort();
+			break;
+		}
+		return std::make_shared<const Basis<T, N>>(Q);
 	}
 
 	template<typename T, size_t N>
 	static std::shared_ptr<const Basis<T, N>> create_basis(const Basis<T, N>& basis) {
-		//check_ort(I);
+		if (!check_ort(basis)) {
+			throw ErrorMath::NonOrthogonal();
+		}
 		return std::make_shared<const Basis<T, N>>(basis);
 	}
 
@@ -200,13 +259,13 @@ namespace tens {
 
 	template<typename T, size_t N, size_t R>
 	basis_object<T, N, R> operator + (const basis_object<T, N, R>& lhs, const basis_object<T, N, R>& rhs) {
-		auto rhsa = rhs.get_comp_at_basis(lhs._basis);
+		auto rhsa = rhs.get_comp_at_basis(lhs);
 		return basis_object<T, N, R>(*lhs._comp + rhsa, lhs._basis);
 	}
 
 	template<typename T, size_t N, size_t R>
 	basis_object<T, N, R> operator - (const basis_object<T, N, R>& lhs, const basis_object<T, N, R>& rhs) {
-		auto rhsa = rhs.get_comp_at_basis(lhs._basis);
+		auto rhsa = rhs.get_comp_at_basis(lhs);
 		return basis_object<T, N, R>(*lhs._comp - rhsa, lhs._basis);
 	}
 
@@ -218,10 +277,9 @@ namespace tens {
 
 	template<typename T, size_t N, size_t R = 1>
 	T operator * (const basis_object<T, N, 1>& lhs, const basis_object<T, N, 1>& rhs) {
-		auto rhsa = rhs.get_comp_at_basis(lhs._basis);
+		auto rhsa = rhs.get_comp_at_basis(lhs);
 		return *lhs._comp * rhsa;
 	}
-
 
 	template <typename T, size_t N>
 	using Vector = tens::basis_object<T, N, 1>;

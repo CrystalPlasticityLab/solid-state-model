@@ -2,8 +2,6 @@
 #include "tensor/test/expect.h"
 #include "tensor/test/test.h"
 #include "tensor/basis.h"
-#include "tensor/vector.h"
-#include "tensor/tensor.h"
 #include "tensor/quat.h"
 #include "factory/factory.h"
 
@@ -17,8 +15,9 @@ int main()
 	using namespace tens;
 	try
 	{
+		run_test();
 		auto basis = create_basis<double, 3>();
-		auto c = tens::container<double, 3>(2);
+		auto v6 = Vector<double, 3>(std::array<double, 3>{1, 0, 0}, basis);
 		auto a3 = tens::container_array<double, 3>(0);
 		auto m1 = Basis<double, 3>(0);
 		auto m2 = Basis<double, 3>(0);
@@ -46,23 +45,10 @@ int main()
 		auto tc = get_comp(t1);
 		v3 += v4;
 		t2 = std::move(t1); 
-		//double x = a1 * a2;
-		//auto c3 = c1 += c2 * c1;
-		auto cb = std::move(c);
-		//std::cout << cb[8];
-		c = std::move(cb);
-		//const auto b = basis<double, 3>::create_basis_random();
-		//const auto b1 = basis<double, 3>::create_basis_random();
-		auto b = generate_rand_ort<double,3>();
 
-		auto m = matrix<double, 3>::generate_rand();
-		auto o1 = object<double, 3>(m, b);
-		auto o2 = object<double, 3>(m, b);
-
-		tensor<double, 3> t(m,b);
 /*		std::shared_ptr<basis<double, 3>> tp;
 		{
-			auto a = new array<double, 3>(ARRAYTTYPE::RANDOM);
+			auto a = new array<double, 3>(ARRAY_TYPE::RANDOM);
 			auto s = new factory::state<double, 3>(b);
 			s->push("matrix", &m);
 			s->push("vector", a);
@@ -74,7 +60,7 @@ int main()
 		//for (size_t i = 0; i < 100; i++)
 		{
 			//auto m = generate_rand<double, 3>();
-			auto a = new array<double, 3>(ARRAYTTYPE::RANDOM);
+			auto a = new array<double, 3>(ARRAY_TYPE::RANDOM);
 			auto s = new factory::state<double, 3>(b);
 			s->push("matrix", &m);
 			s->push("vector", a);
@@ -92,7 +78,6 @@ int main()
 			delete a;
 		}
 		*/
-		run_test();
 	}
 	catch(const std::exception& e)
 	{
