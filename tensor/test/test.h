@@ -3,6 +3,7 @@
 #include "../array.h"
 #include "../vector.h"
 #include "../tensor.h"
+#include "../../factory/factory.h"
 #include "expect.h"
 
 void test_array();

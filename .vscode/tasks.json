@@ -19,7 +19,7 @@
                 "./tensor/test/test_tensor.cpp",
                 "./tensor/test/test_leak.cpp",
                 "./tensor/test/test.cpp",
-                "./tensor/main.cpp"
+                "./main.cpp"
             ],
             "group": "build",
             "presentation": {

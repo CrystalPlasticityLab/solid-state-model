@@ -4,66 +4,46 @@
 
 namespace tens {
 
-	enum class ARRAYTTYPE{
-		ZERO,
-		RANDOM,
-		RANDOMUNIT
-	};
+
 
 	template<typename T, std::size_t N> class array;
 	template<typename T, std::size_t N> std::ostream& operator<< (std::ostream& o, const array<T, N>& v);
 
 	template<typename T, size_t N>
-	class array : public std::unique_ptr<T[]>
+	class array : public container<T, N>
 	{
-		size_t  _dim;
-		void _fill(const T& val){
-			for (size_t i = 0; i < N; i++){
-				(*this)[i] =  val;
-			}
-		}
-		void _fill_random(){
-			for (size_t i = 0; i < N; i++) {
-				(*this)[i] = static_cast<T>(unidistr(gen));
-			}
-		}
-		void _copy(const T* const values){
-			for (size_t i = 0; i < N; i++){
-				(*this)[i] =  values[i];
-			}
-		}
 		void _copy(const std::array<T,N>& arr){
 			for (size_t i = 0; i < N; i++){
 				(*this)[i] =  arr[i];
 			}
 		}
-		void _copy(const array& arr){
-			for (size_t i = 0; i < N; i++){
-				(*this)[i] =  arr[i];
-			}
-		}
 	protected:
-		array() : std::unique_ptr<T[]>(new T[N]), _dim(N) { 
-			this->_fill(T());
+		array() : container<T, N>(1) {
+			container<T, N>::fill_value(T(0));
 		};
 	public:
 		~array() { };
-		explicit array(ARRAYTTYPE AT);
-		explicit array(const T& val)               : std::unique_ptr<T[]>(new T[N]), _dim(N) { this->_fill(val); }; // public ctor by const value
-		explicit array(const std::array<T,N>& arr) : std::unique_ptr<T[]>(new T[N]), _dim(N) { this->_copy(arr); }; // public ctor by astd::array
-		explicit array(const array&  a)            : std::unique_ptr<T[]>(new T[a._dim]), _dim(a._dim)  { this->_copy(a.get()); }; // copy ctor
-		array(array&& v)noexcept : std::unique_ptr<T[]>(std::move(v))         { }; // move ctor
+		explicit array(ARRAY_TYPE AT);
+		explicit array(const T& val) : container<T, N>(1) { container<T, N>::fill_value(T(0)); };
+		explicit array(const std::array<T, N>& arr) : container<T, N>(1) { this->_copy(arr); };
+		explicit array(const array& a) : container<T, N>(static_cast<const container<T, N>&>(a)) {};
+		array(array&& a)noexcept : container<T, N>(static_cast<container<T, N>&&>(a)) {};
+
+		static array generate_rand() {
+			array<T, N> a;
+			a.fill_rand();
+			return a;
+		};
 
 		friend std::ostream& operator<< <>(std::ostream& out, const array& a);
 
 		inline array& operator= (const array& rhs)	{ // copy assign operator
-			_copy(rhs);
-			this->_dim = rhs._dim;
+			container<T, N>::operator = (static_cast<const container<T, N>&>(rhs));
 			return *this;
 		}
 
 		inline array& operator= (array&& rhs) noexcept {  // move assign operator
-			static_cast<std::unique_ptr<T[]>&>(*this) = std::move(rhs);
+			container<T, N>::operator = (static_cast<container<T, N>&&>(rhs));
 			return *this;
 		}
 		
@@ -116,21 +96,21 @@ namespace tens {
 	};
 
 	template<typename T, std::size_t N>
-	array<T, N>::array(ARRAYTTYPE AT) : std::unique_ptr<T[]>(new T[N]), _dim(N) {
+	array<T, N>::array(ARRAY_TYPE AT) :container<T,N>(1) {
 		switch (AT)
 		{
-		case ARRAYTTYPE::ZERO:		
-			this->_fill((T)0);
+		case ARRAY_TYPE::ZERO:		
+			container<T, N>::fill_value((T)0);
 			return;
-		case ARRAYTTYPE::RANDOM: 
-			_fill_random();
+		case ARRAY_TYPE::RANDOM: 
+			container<T, N>::fill_rand();
 			return;
-		case ARRAYTTYPE::RANDOMUNIT:
-			_fill_random();
+		case ARRAY_TYPE::RANDOMUNIT:
+			container<T, N>::fill_rand();
 			normalize();
 			return;
 		default:                     	
-			this->_fill((T)0);
+			container<T, N>::fill_value((T)0);
 			return;
 		}
 		return;
