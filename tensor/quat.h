@@ -9,31 +9,31 @@ namespace tens {
 	};
 
 	template<typename T>
-	class quat : public container_rank<T, 4, 1>
+	class quat : public container<T, 4, 1>
 	{
 	public:
-		quat() : container_rank<T, 4, 1>((T)0) { (*this)[0] = (T)1; };
+		quat() : container<T, 4, 1>((T)0) { (*this)[0] = (T)1; };
 		explicit quat(const quat& q) ;
-		explicit quat(const container_rank<T, 4, 1>& q) : container_rank<T, 4, 1>(q) {};
-		explicit quat(const T& re, const container_rank<T, 3, 1 >& im, QUATFORM type);
+		explicit quat(const container<T, 4, 1>& q) : container<T, 4, 1>(q) {};
+		explicit quat(const T& re, const container<T, 3, 1 >& im, QUATFORM type);
 
-		void set_im(const container_rank<T, 3, 1>& im);
-		inline container_rank<T, 3, 1> get_im() const;
+		void set_im(const container<T, 3, 1>& im);
+		inline container<T, 3, 1> get_im() const;
 		inline T re() const;
 
-		inline quat& operator = (const container_rank<T, 4, 1>& v);
+		inline quat& operator = (const container<T, 4, 1>& v);
 		inline quat operator * (const quat& rhs) const;
 		inline quat operator * (const T& mult) const;
 		inline quat operator * () const;
 		inline quat operator ! () const;
 
-		static friend container_rank<T, 3, 2> get_ort_matrix(const quat<T>& q);
-		//static inline matrix<T, 3> get_ort_matrix(const T& angle, const container_rank<T, 3, 1>& axis);
+		static friend container<T, 3, 2> get_ort_matrix(const quat<T>& q);
+		//static inline matrix<T, 3> get_ort_matrix(const T& angle, const container<T, 3, 1>& axis);
 	private:
 	};
 
 	template<typename T>
-	quat<T>::quat(const T& re, const container_rank<T, 3, 1>& im, QUATFORM type) {
+	quat<T>::quat(const T& re, const container<T, 3, 1>& im, QUATFORM type) {
 		T angleto2 = (T)0;
 		switch (type)
 		{
@@ -58,15 +58,15 @@ namespace tens {
 	};
 
 	template<typename T>
-	inline void quat<T>::set_im(const container_rank<T, 3, 1>& im){
+	inline void quat<T>::set_im(const container<T, 3, 1>& im){
 		(*this)[1] = im[0];
 		(*this)[2] = im[1];
 		(*this)[3] = im[2];
 	}
 
 	template<typename T>
-	inline container_rank<T, 3, 1> quat<T>::get_im() const{
-		container_rank<T, 3, 1> res;
+	inline container<T, 3, 1> quat<T>::get_im() const{
+		container<T, 3, 1> res;
 		const std::array<T, 4>& v = (*this)();
 		res[0] = v[1];
 		res[1] = v[2];
@@ -80,8 +80,8 @@ namespace tens {
 	}
 
 	template<typename T>
-	inline quat<T>& quat<T>::operator = (const container_rank<T, 4, 1>& v){
-		static_cast<quat<T>&>(container_rank<T, 4, 1>::operator=(v));
+	inline quat<T>& quat<T>::operator = (const container<T, 4, 1>& v){
+		static_cast<quat<T>&>(container<T, 4, 1>::operator=(v));
 		return *this;
 	}
 
@@ -100,14 +100,14 @@ namespace tens {
 	}
 
 	template<typename T>inline quat<T> quat<T>::operator * (const T& mult) const{
-		return static_cast<quat<T>>(container_rank<T, 4, 1>::operator*(mult));
+		return static_cast<quat<T>>(container<T, 4, 1>::operator*(mult));
 	}
 
 	template<typename T>
 	inline quat<T>  quat<T>::operator * (const quat<T>& rhs) const{
 		quat<T> res;
-		container_rank<T, 3, 1> lv = get_im();
-		container_rank<T, 3, 1> rv = rhs.get_im();
+		container<T, 3, 1> lv = get_im();
+		container<T, 3, 1> rv = rhs.get_im();
 		T lr = re();
 		T rr = rhs.re();
 
@@ -117,10 +117,10 @@ namespace tens {
 	}
 
 	template<typename T>
-	static container_rank<T, 3, 2> get_ort_matrix(const quat<T>& _q){
+	static container<T, 3, 2> get_ort_matrix(const quat<T>& _q){
 		T wx, wy, wz, xx, yy, yz, xy, xz, zz;
 		std::array<std::array<T, 3>, 3> m;
-		container_rank<T, 4, 1> q = get_normalize(_q);
+		container<T, 4, 1> q = get_normalize(_q);
 
 		xx = 2.0 * q[1] * q[1];   xy = 2.0 * q[1] * q[2];   xz = 2.0 * q[1] * q[3];
 		yy = 2.0 * q[2] * q[2];   yz = 2.0 * q[2] * q[3];   zz = 2.0 * q[3] * q[3];
@@ -129,11 +129,11 @@ namespace tens {
 		m[0][0] = 1.0 - (yy + zz); /*+*/ m[0][1] = xy - wz;               /*+*/  m[0][2] = xz + wy;				 /*+*/
 		m[1][0] = xy + wz;         /*+*/ m[1][1] = 1.0 - (xx + zz);       /*+*/	 m[1][2] = yz - wx;				 /*+*/
 		m[2][0] = xz - wy;         /*+*/ m[2][1] = yz + wx;		          /*+*/  m[2][2] = 1.0 - (xx + yy);/*+*/
-		return container_rank<T, 3, 2>(m);//matrix<T,3>(m);
+		return container<T, 3, 2>(m);//matrix<T,3>(m);
 	}
 
 	//template<typename T>
-	//inline matrix<T, 3> quat<T>::get_ort_matrix(const T& angle, const container_rank<T, 3, 1>& axis){
+	//inline matrix<T, 3> quat<T>::get_ort_matrix(const T& angle, const container<T, 3, 1>& axis){
 	//	return quat<T>(angle, axis, QUATFORM::ANGLEAXIS).get_ort_matrix();
 	//}
 };

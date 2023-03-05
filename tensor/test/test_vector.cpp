@@ -7,10 +7,10 @@ void test_vector(){
     int all_tests = 0;
     int pass_tests = 0;
     auto a_zero = Array<double, 3>(0.0);
-    const auto a1 = Array<double, 3>(ARRAY_TYPE::RANDOM);
-    const auto a2 = Array<double, 3>(ARRAY_TYPE::RANDOM);
-    const auto a3 = Array<double, 3>(ARRAY_TYPE::RANDOM);
-    const auto a4 = Array<double, 3>(ARRAY_TYPE::RANDOM);
+    const auto a1 = Array<double, 3>(FILL_TYPE::RANDOM);
+    const auto a2 = Array<double, 3>(FILL_TYPE::RANDOM);
+    const auto a3 = Array<double, 3>(FILL_TYPE::RANDOM);
+    const auto a4 = Array<double, 3>(FILL_TYPE::RANDOM);
 
 	const auto basis1 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
 	const auto basis2 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
