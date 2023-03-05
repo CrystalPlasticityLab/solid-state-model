@@ -6,12 +6,12 @@ void test_tensor(){
     std::cout << " =================== Start testing Tensor ===================" << std::endl;
     int all_tests = 0;
     int pass_tests = 0;
-    auto m_zero = Matrix<double, 3>(); m_zero.fill_value(0);
-    auto m1 = Matrix<double, 3>(); m1.fill_rand();
-    auto m2 = Matrix<double, 3>(); m2.fill_rand();
-    auto m3 = Matrix<double, 3>(); m3.fill_rand();
-    auto m4 = Matrix<double, 3>(); m4.fill_rand();
-    auto a1 = Array<double, 3>(ARRAY_TYPE::RANDOM);
+    const auto m_zero = Matrix<double, 3>(FILL_TYPE::ZERO);
+    const auto m1 = Matrix<double, 3>(FILL_TYPE::RANDOM);
+    const auto m2 = Matrix<double, 3>(FILL_TYPE::RANDOM);
+    const auto m3 = Matrix<double, 3>(FILL_TYPE::RANDOM);
+    const auto m4 = Matrix<double, 3>(FILL_TYPE::RANDOM);
+    const auto a1 = Array<double, 3>(FILL_TYPE::RANDOM);
 
     const auto basis1 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
     const auto basis2 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);

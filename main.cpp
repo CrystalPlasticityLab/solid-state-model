@@ -17,21 +17,20 @@ int main()
 	{
 		run_test();
 		auto basis = create_basis<double, 3>();
+		const auto b1 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
+		const auto b2 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
 		auto v6 = Vector<double, 3>(std::array<double, 3>{1, 0, 0}, basis);
-		auto a3 = tens::container_array<double, 3>(0);
-		auto m1 = Basis<double, 3>(0);
-		auto m2 = Basis<double, 3>(0);
-		auto pm1 = std::make_shared<Basis<double, 3>>(m1);
-		//auto y = a3 * m1;
-		auto v1 = Vector<double, 3>(a3, m1);
-		auto v2 = Vector<double, 3>(a3, pm1);
+		const auto m1 = Matrix<double, 3>(FILL_TYPE::RANDOM);
+		const auto m2 = Matrix<double, 3>(FILL_TYPE::RANDOM);
+		auto a3 = std::array<double, 3>{1, 0, 0};
+		auto v1 = Vector<double, 3>(a3, b1);
+		auto v2 = Vector<double, 3>(a3, b1);
 		auto v3 = v1;
 		auto v5 = std::move(v1);
-		auto v4 = Vector<double, 3>(a3, m1);
-		auto t1 = Tensor<double, 3>(m1, m2);
-		auto t2 = Tensor<double, 3>(m1, pm1);
+		auto v4 = Vector<double, 3>(a3, b1);
+		auto t1 = Tensor<double, 3>(m1, b2);
+		auto t2 = Tensor<double, 3>(m2, b2);
 		auto res = m1 * m1;
-		auto m1t = transpose(m1);
 		auto vres = v4 + v3;
 		v1 = v4 - v3;
 		v1 = v4 + v3;
@@ -45,10 +44,22 @@ int main()
 		auto tc = get_comp(t1);
 		v3 += v4;
 		t2 = std::move(t1); 
-
+		auto s = factory::state(b1);
+		auto& ob1 = s.push<1>("vector");
+		auto& ob2 = s.push<2>("Indent", FILL_TYPE::INDENT);
+		auto& ob3 = s.push<2>("Tens_rand", FILL_TYPE::RANDOM);
+		//s.remove("Tens_rand");
+		//auto& ob4 = s.push<2>("Tens_rand", FILL_TYPE::RANDOM);
+		//auto ob31 = s["Tens_rand"];
+		auto& ob31 = s.get<2>("Tens_rand");
+		//ob31 + ob31;
+		//std::shared_ptr<basis_base<double, 3>> ob = *ob31;
+		std::cout << ob3;
+		std::cout << ob31;
+		return 0;
 /*		std::shared_ptr<basis<double, 3>> tp;
 		{
-			auto a = new array<double, 3>(ARRAY_TYPE::RANDOM);
+			auto a = new array<double, 3>(FILL_TYPE::RANDOM);
 			auto s = new factory::state<double, 3>(b);
 			s->push("matrix", &m);
 			s->push("vector", a);
@@ -60,7 +71,7 @@ int main()
 		//for (size_t i = 0; i < 100; i++)
 		{
 			//auto m = generate_rand<double, 3>();
-			auto a = new array<double, 3>(ARRAY_TYPE::RANDOM);
+			auto a = new array<double, 3>(FILL_TYPE::RANDOM);
 			auto s = new factory::state<double, 3>(b);
 			s->push("matrix", &m);
 			s->push("vector", a);

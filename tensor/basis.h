@@ -3,8 +3,12 @@
 
 namespace tens {
 
+	template<typename T, size_t N, size_t R>
+	class basis;
+	template<typename T, size_t N, size_t R> std::ostream& operator<< (std::ostream& o, const basis<T, N, R>& b);
+
 	template<typename T, size_t N>
-	static std::shared_ptr<const Basis<T, N>> create_basis(const Basis<T, N>& basis);
+	static Basis<T, N> create_basis(const Basis<T, N>& basis);
 
 
 	enum class DEFAULT_ORTH_BASIS {
@@ -13,17 +17,24 @@ namespace tens {
 	};
 
 	template<typename T, size_t N>
-	static std::shared_ptr<const Basis<T, N>> create_basis(DEFAULT_ORTH_BASIS type);
+	static Basis<T, N> create_basis(DEFAULT_ORTH_BASIS type);
+
+	template<typename T, size_t N>
+	class basis_base { // just for abstraction, excluding R as parameter
+
+		virtual size_t get_rank() = 0;
+	};
 
 	template<typename T, size_t N, size_t R>
-	class basis_object {
-		std::unique_ptr<container_rank<T, N, R>> _comp;
-		std::shared_ptr<const Basis<T, N>> _basis;
+	class basis : public basis_base<T,N> {
 
-		void _copy(const basis_object<T, N, R>& src) {
+		std::unique_ptr<container<T, N, R>> _comp;
+		Basis<T, N> _basis;
+
+		void _copy(const basis<T, N, R>& src) {
 			if (_basis == nullptr) { // it has no basis, so we create it
-				_comp = std::make_unique<container_rank<T, N, R>>(container_rank<T, N, R>(*src._comp));
-				_basis = std::make_shared<Basis<T, N>>(Basis<T, N>(*src._basis));
+				_comp = std::make_unique<container<T, N, R>>(container<T, N, R>(*src._comp));
+				_basis = std::make_shared<basis_cont<T, N>>(basis_cont<T, N>(*src._basis));
 			}
 			else { // has basis, recalc comp at this basis if it is necessery
 				if (_basis == src._basis) { // basis is the same, just copy comp
@@ -35,7 +46,7 @@ namespace tens {
 			}
 		}
 
-		void _move(basis_object<T, N, R>&& src) {
+		void _move(basis<T, N, R>&& src) {
 			if (_basis == nullptr) { // it has no basis, so move all
 				_comp = std::move(src._comp);
 				_basis = std::move(src._basis);
@@ -52,91 +63,91 @@ namespace tens {
 			}
 		}
 
-		void _reset_basis(const std::shared_ptr<const Basis<T, N>>& pbasis) {
+		void _reset_basis(const Basis<T, N>& pbasis) {
 			_basis.reset();
 			_basis = pbasis;
 		}
 
 	protected:
 
-		void move_basis(const std::shared_ptr<Basis<T, N>>& pbasis) {
+		void move_basis(const std::shared_ptr<basis_cont<T, N>>& pbasis) {
 			_reset_basis(pbasis);
 		}
 		// R.Rt
-		Basis<T, N> get_transform(const std::shared_ptr<const Basis<T, N>>& basis) const {
+		basis_cont<T, N> get_transform(const Basis<T, N>& basis) const {
 			return mat_scal_mat_transp(*this->_basis, *basis);
 		}
 	public:
-		basis_object(const basis_object<T, N, R>& basis_obj) { // copy ctor
+		basis(const basis<T, N, R>& basis_obj) { // copy ctor
 			_copy(basis_obj);
 		}
 
-		basis_object(basis_object<T, N, R>&& basis_obj) noexcept { // move ctor
+		basis(basis<T, N, R>&& basis_obj) noexcept { // move ctor
 			_move(std::move(basis_obj));
 		}
 
-		basis_object(const container_rank<T, N, R>& comp, const Basis<T, N>& basis) {
-			_comp = std::make_unique<container_rank<T, N, R>>(comp);
+		basis(const container<T, N, R>& comp, const basis_cont<T, N>& basis) {
+			_comp = std::make_unique<container<T, N, R>>(comp);
 			_basis = create_basis(basis);
 		}
 
-		basis_object(const std::array<T, N>& comp, const Basis<T, N>& basis) {
-			_comp = std::make_unique<container_rank<T, N, R>>(comp);
+		basis(const std::array<T, N>& comp, const basis_cont<T, N>& basis) {
+			_comp = std::make_unique<container<T, N, R>>(comp);
 			_basis = create_basis(basis);
 		}
 
-		basis_object(container_rank<T, N, R>&& comp, const Basis<T, N>& basis) noexcept {
-			_comp = std::make_unique<container_rank<T, N, R>>(std::move(comp));
+		basis(container<T, N, R>&& comp, const basis_cont<T, N>& basis) noexcept {
+			_comp = std::make_unique<container<T, N, R>>(std::move(comp));
 			_basis = create_basis(basis);
 		}
 
-		basis_object(const container_rank<T, N, R>& comp, Basis<T, N>&& basis) noexcept {
-			_comp = std::make_unique<container_rank<T, N, R>>(comp);
+		basis(const container<T, N, R>& comp, basis_cont<T, N>&& basis) noexcept {
+			_comp = std::make_unique<container<T, N, R>>(comp);
 			_basis = std::move(basis);
 		}
 
-		basis_object(container_rank<T, N, R>&& comp, Basis<T, N>&& basis) noexcept {
-			_comp = std::make_unique<container_rank<T, N, R>>(std::move(comp));
+		basis(container<T, N, R>&& comp, basis_cont<T, N>&& basis) noexcept {
+			_comp = std::make_unique<container<T, N, R>>(std::move(comp));
 			_basis = std::move(basis);
 		}
 
-		basis_object(const std::array<T, N>& comp, const std::shared_ptr<const Basis<T, N>>& pbasis) {
-			_comp = std::make_unique<container_rank<T, N, R>>(comp);
+		basis(const std::array<T, N>& comp, const Basis<T, N>& pbasis) {
+			_comp = std::make_unique<container<T, N, R>>(comp);
 			_basis = pbasis;
 		}
 
-		basis_object(const container_rank<T, N, R>& comp, const std::shared_ptr<const Basis<T, N>>& pbasis) {
-			_comp = std::make_unique<container_rank<T, N, R>>(comp);
+		basis(const container<T, N, R>& comp, const Basis<T, N>& pbasis) {
+			_comp = std::make_unique<container<T, N, R>>(comp);
 			_basis = pbasis;
 		}
 
-		basis_object(container_rank<T, N, R>&& comp, const std::shared_ptr<const Basis<T, N>>& pbasis) noexcept {
-			_comp = std::make_unique<container_rank<T, N, R>>(std::move(comp));
+		basis(container<T, N, R>&& comp, const Basis<T, N>& pbasis) noexcept {
+			_comp = std::make_unique<container<T, N, R>>(std::move(comp));
 			_basis = pbasis;
 		}
 
-		void change_basis(const basis_object<T, N, R>& obj) {
+		void change_basis(const basis<T, N, R>& obj) {
 			change_basis(obj.get_basis_ref());
 		}
 
-		void change_basis(const std::shared_ptr<const Basis<T, N>>& pbasis) {
-			_comp = std::make_unique<container_rank<T, N, R>>(std::move(get_comp_at_basis(pbasis)));
+		void change_basis(const Basis<T, N>& pbasis) {
+			_comp = std::make_unique<container<T, N, R>>(std::move(get_comp_at_basis(pbasis)));
 			_reset_basis(pbasis);
 		}
 
-		size_t get_rank() {	return R;};
+		size_t get_rank() override { return R;};
 
-		container_rank<T, N, R> get_comp_at_basis(const basis_object<T, N, R>& obj) const {
+		container<T, N, R> get_comp_at_basis(const basis<T, N, R>& obj) const {
 			return get_comp_at_basis(obj.get_basis_ref());
 		}
 
-		container_rank<T, N, R> get_comp_at_basis(const std::shared_ptr<const Basis<T, N>>& pbasis) const {
+		container<T, N, R> get_comp_at_basis(const Basis<T, N>& pbasis) const {
 			const auto& comp = get_comp_ref();
 			if (pbasis == get_basis_ref()) {
 				return comp;
 			}
 			else {
-				Basis<T, N> op = get_transform(pbasis);
+				basis_cont<T, N> op = get_transform(pbasis);
 				if (R == 1) {
 					return comp * op;
 				}
@@ -146,74 +157,74 @@ namespace tens {
 			}
 		}
 
-		const std::shared_ptr<const Basis<T, N>> get_basis_ref() const {
+		const Basis<T, N> get_basis_ref() const {
 			return this->_basis;
 		}
 
-		const container_rank<T, N, R>& get_comp_ref() const {
+		const container<T, N, R>& get_comp_ref() const {
 			return *this->_comp;
 		}
 
-		Basis<T, N> get_basis_comp() const {
-			return Basis<T, N>(*this->_basis);
+		basis_cont<T, N> get_basis_comp() const {
+			return basis_cont<T, N>(*this->_basis);
 		}
 
-		container_rank<T, N, R> get_comp() const {
-			return container_rank<T, N, R>(*this->_comp);
+		container<T, N, R> get_comp() const {
+			return container<T, N, R>(*this->_comp);
 		}
 
-		basis_object operator *= (const T& mul) {
+		basis operator *= (const T& mul) {
 			*this->_comp *= mul;
 			return *this;
 		}
 
-		basis_object operator *= (const basis_object& rhs) {
+		basis operator *= (const basis& rhs) {
 			*this = *this * rhs;
 			return *this;
 		}
 
-		basis_object operator += (const basis_object<T, N, R>& rhs) {
+		basis operator += (const basis<T, N, R>& rhs) {
 			auto rhsa = rhs.get_comp_at_basis(*this);
 			*this->_comp += rhsa;
 			return *this;
 		}
 
-		basis_object operator -= (const basis_object<T, N, R>& rhs) {
+		basis operator -= (const basis<T, N, R>& rhs) {
 			auto rhsa = rhs.get_comp_at_basis(*this);
 			*this->_comp -= rhsa;
 			return *this;
 		}
 
-		static friend bool check_ort(const Basis<T, N>& m);
+		static friend bool check_ort(const basis_cont<T, N>& m);
 
-		static friend T operator * <> (const basis_object<T, N, 1>& lhs, const  basis_object<T, N, 1>& rhs);
-		static friend basis_object<T, N, R> operator * <> (const basis_object<T, N, R>& lhs, const T& mul);
-		static friend basis_object<T, N, R> operator * <> (const T& mul, const basis_object<T, N, R>& rhs);
-		static friend basis_object<T, N, R> operator + <> (const basis_object<T, N, R>& lhs, const  basis_object<T, N, R>& rhs);
-		static friend basis_object<T, N, R> operator - <> (const basis_object<T, N, R>& lhs, const  basis_object<T, N, R>& rhs);
+		static friend T operator * <> (const basis<T, N, 1>& lhs, const  basis<T, N, 1>& rhs);
+		static friend basis<T, N, R> operator * <> (const basis<T, N, R>& lhs, const T& mul);
+		static friend basis<T, N, R> operator * <> (const T& mul, const basis<T, N, R>& rhs);
+		static friend basis<T, N, R> operator + <> (const basis<T, N, R>& lhs, const  basis<T, N, R>& rhs);
+		static friend basis<T, N, R> operator - <> (const basis<T, N, R>& lhs, const  basis<T, N, R>& rhs);
 
-		basis_object& operator = (const basis_object<T, N, R>& rhs) { // copy assign
+		basis& operator = (const basis<T, N, R>& rhs) { // copy assign
 			_copy(rhs);
 			return *this;
 		}
 
-		basis_object& operator = (basis_object<T, N, R>&& rhs) noexcept { // move assign
+		basis& operator = (basis<T, N, R>&& rhs) noexcept { // move assign
 			_move(std::move(rhs));
 			return *this;
 		}
 
-		friend bool operator == (const basis_object<T, N, R>& lhs, const basis_object<T, N, R>& rhs) {
+		friend bool operator == (const basis<T, N, R>& lhs, const basis<T, N, R>& rhs) {
 			return lhs.get_comp_ref() == rhs.get_comp_at_basis(lhs.get_basis_ref());
 		}
 
-		friend static basis_object<T, N, R> transpose(const basis_object<T, N, R>& m) {
-			return basis_object<T, N, R>(transpose(m.get_comp_ref()), m.get_basis_ref());
+		friend static basis<T, N, R> transpose(const basis<T, N, R>& m) {
+			return basis<T, N, R>(transpose(m.get_comp_ref()), m.get_basis_ref());
 		}
 	};
 
 	template<typename T, size_t N, size_t R = 2>
-	static bool check_ort(const container_rank<T, N, 2>& m) {
-		container_rank<T, N, 2> I = m * transpose(m);
+	static bool check_ort(const container<T, N, 2>& m) {
+		container<T, N, 2> I = m * transpose(m);
 		T diag = 0;
 		T nondiag = 0;
 		for (size_t diagIdx = 0; diagIdx < 3; diagIdx++)
@@ -224,8 +235,8 @@ namespace tens {
 	}
 
 	template<typename T, size_t N>
-	static std::shared_ptr<const Basis<T, N>> create_basis(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
-		Basis<T, N> Q;
+	static Basis<T, N> create_basis(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
+		basis_cont<T, N> Q;
 		switch (type)
 		{
 		case tens::DEFAULT_ORTH_BASIS::RANDOM:
@@ -236,59 +247,59 @@ namespace tens {
 			Q = generate_indent_ort();
 			break;
 		}
-		return std::make_shared<const Basis<T, N>>(Q);
+		return std::make_shared<const basis_cont<T, N>>(Q);
 	}
 
 	template<typename T, size_t N>
-	static std::shared_ptr<const Basis<T, N>> create_basis(const Basis<T, N>& basis) {
+	static Basis<T, N> create_basis(const basis_cont<T, N>& basis) {
 		if (!check_ort(basis)) {
 			throw ErrorMath::NonOrthogonal();
 		}
-		return std::make_shared<const Basis<T, N>>(basis);
+		return std::make_shared<const basis_cont<T, N>>(basis);
 	}
 
 	template<typename T, size_t N, size_t R>
-	basis_object<T, N, R> operator * (const basis_object<T, N, R>& lhs, const T& mul) {
-		return basis_object<T, N, R>(*lhs._comp * mul, lhs._basis);
+	basis<T, N, R> operator * (const basis<T, N, R>& lhs, const T& mul) {
+		return basis<T, N, R>(*lhs._comp * mul, lhs._basis);
 	}
 
 	template<typename T, size_t N, size_t R>
-	basis_object<T, N, R> operator * (const T& mul, const basis_object<T, N, R>& rhs) {
-		return basis_object<T, N, R>(*rhs._comp * mul, rhs._basis);
+	basis<T, N, R> operator * (const T& mul, const basis<T, N, R>& rhs) {
+		return basis<T, N, R>(*rhs._comp * mul, rhs._basis);
 	}
 
 	template<typename T, size_t N, size_t R>
-	basis_object<T, N, R> operator + (const basis_object<T, N, R>& lhs, const basis_object<T, N, R>& rhs) {
+	basis<T, N, R> operator + (const basis<T, N, R>& lhs, const basis<T, N, R>& rhs) {
 		auto rhsa = rhs.get_comp_at_basis(lhs);
-		return basis_object<T, N, R>(*lhs._comp + rhsa, lhs._basis);
+		return basis<T, N, R>(*lhs._comp + rhsa, lhs._basis);
 	}
 
 	template<typename T, size_t N, size_t R>
-	basis_object<T, N, R> operator - (const basis_object<T, N, R>& lhs, const basis_object<T, N, R>& rhs) {
+	basis<T, N, R> operator - (const basis<T, N, R>& lhs, const basis<T, N, R>& rhs) {
 		auto rhsa = rhs.get_comp_at_basis(lhs);
-		return basis_object<T, N, R>(*lhs._comp - rhsa, lhs._basis);
+		return basis<T, N, R>(*lhs._comp - rhsa, lhs._basis);
 	}
 
 	template<typename T, size_t N, size_t Rl, size_t Rr >
-	basis_object<T, N, Rl + Rr - 2> operator * (const basis_object<T, N, Rl>& lhs, const basis_object<T, N, Rr>& rhs) {
+	basis<T, N, Rl + Rr - 2> operator * (const basis<T, N, Rl>& lhs, const basis<T, N, Rr>& rhs) {
 		auto rhsa = rhs.get_comp_at_basis(lhs.get_basis_ref());
-		return basis_object<T, N, Rl + Rr - 2>(lhs.get_comp_ref() * rhsa, lhs.get_basis_ref());
+		return basis<T, N, Rl + Rr - 2>(lhs.get_comp_ref() * rhsa, lhs.get_basis_ref());
 	}
 
 	template<typename T, size_t N, size_t R = 1>
-	T operator * (const basis_object<T, N, 1>& lhs, const basis_object<T, N, 1>& rhs) {
+	T operator * (const basis<T, N, 1>& lhs, const basis<T, N, 1>& rhs) {
 		auto rhsa = rhs.get_comp_at_basis(lhs);
 		return *lhs._comp * rhsa;
 	}
 
 	template <typename T, size_t N>
-	using Vector = tens::basis_object<T, N, 1>;
+	using Vector = tens::basis<T, N, 1>;
 	template <typename T, size_t N>
-	using Tensor = tens::basis_object<T, N, 2>;
+	using Tensor = tens::basis<T, N, 2>;
 
 
 	template<typename T, size_t N>
-	std::array<T, N> get_comp(const basis_object<T, N, 1>& vect) {
+	std::array<T, N> get_comp(const basis<T, N, 1>& vect) {
 		auto arr = vect.get_comp().get();
 		std::array<T, N> res;
 		for (size_t i = 0; i < N; ++i) {
@@ -298,7 +309,7 @@ namespace tens {
 	}
 
 	template<typename T>
-	std::array<std::array<T, 3>, 3> get_comp(const basis_object<T, 3, 2>& vect) {
+	std::array<std::array<T, 3>, 3> get_comp(const basis<T, 3, 2>& vect) {
 		// {00, 11, 22, 12, 02, 01, 21, 20, 10}  
 		auto arr = vect.get_comp().get();
 		std::array<std::array<T, 3>, 3> res;
@@ -314,81 +325,13 @@ namespace tens {
 		return res;
 	}
 
-
-
-
-	template<typename T, size_t N>
-	class object : private container<T,N>
-	{
-		typedef  matrix<T, N> M;
-		typedef  std::shared_ptr <M> _shared;
-		typedef  container<T, N> _cont;
-
-		std::shared_ptr<matrix<T, N>> basis;
-	public:
-		object(const _cont& c, const M& m) : basis(std::make_shared<M>(m)), _cont(c) {
-
-		}
+	template<typename T, size_t N, size_t R>
+	std::ostream& operator<<(std::ostream& out, const basis<T, N, R>& b) {
+		const auto cont = b.get_comp_ref();
+		out << "{ ";
+		for (size_t idx = 0; idx < cont._size - 1; idx++)
+			out << cont[idx] << ", ";
+		out << cont[cont._size - 1] << " }\n";
+		return out;
 	};
-
-	template<typename T, size_t N>
-	class basis : public std::shared_ptr<matrix<T, N>> {
-		typedef  matrix<T, N> M;
-		typedef  std::shared_ptr <M> _shared;
-
-		const basis& operator()() { return *this; };
-
-		static const matrix<T, N> GLOBAL_DEFAULT_BASIS;
-		bool owner = false;
-		//size_t state = (size_t)this;
-	protected:
-		//size_t get_state() { return (size_t)state; };
-		basis() : _shared() {};
-		basis(const basis&  sh) : _shared(sh) {}; // to prevent multiply owning out of scope of vector/tensor
-		basis(basis&& sh) noexcept  { _move(static_cast<basis&&>(sh)); };
-		basis& operator = (const basis& sh) { _shared::operator=(sh); return *this; };
-		basis& operator = (basis&& sh) noexcept { return _move(static_cast<basis&&>(sh));};
-		basis& _move(basis&& rhs) {
-			_shared::reset();
-			static_cast<_shared&>(*this) = std::move(static_cast<_shared&&>(rhs));
-			this->owner = rhs.owner;
-			return *this;
-		};
-		void _deep_copy(const basis& rhs) {
-			_shared::reset();
-			static_cast<_shared&>(*this) = std::make_shared<M>(M(*rhs.get()));
-			this->owner = true;
-		}
-		const void     set_basis(const basis& rhs) { *this = (rhs); }
-
-		explicit basis(const matrix<T, N>& m) : _shared(std::make_shared<matrix<T, N>>(m)) {
-			if (!check_ort_basis()){
-				throw ErrorMath::NonOrthogonal();
-			}
-			owner = true;
-		}
-		/* WARNING : CHANGE Object: move to the target basis m, just basis changes*/
-		virtual void    move_to_basis(const basis& m) { set_basis(m); };
-		/* NOTE: not change object: just recalc components*/
-		virtual void    change_basis(const basis& m) { set_basis(m); }; // must be overrided in chldren classes
-	public:
-		virtual size_t get_rank() const {return 0;};
-
-		static basis<T,N> create_basis(const matrix<T, N>& m){
-			return basis<T,N>(m);
-		}
-
-		static basis<T, N> create_basis_random() {
-			return basis<T, N>(generate_rand_ort<T, N>());
-		}
-
-		bool check_ort_basis() const {
-			return this->get()->check_ort();
-		}
-
-		friend std::ostream& operator<< (std::ostream& out, const basis& t) { out << *(t.get()); return out; };
-	};
-
-	template<typename T, size_t N>
-	const matrix<T, N> GLOBAL_DEFAULT_BASIS = matrix<T, N>(MATRIXINITTYPE::INDENT);
 };
