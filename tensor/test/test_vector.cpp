@@ -6,7 +6,7 @@ void test_vector(){
     std::cout << " =================== Start testing Vector ===================" << std::endl;
     int all_tests = 0;
     int pass_tests = 0;
-    auto a_zero = Array<double, 3>(0.0);
+    const auto a_zero = Array<double, 3>(FILL_TYPE::ZERO);
     const auto a1 = Array<double, 3>(FILL_TYPE::RANDOM);
     const auto a2 = Array<double, 3>(FILL_TYPE::RANDOM);
     const auto a3 = Array<double, 3>(FILL_TYPE::RANDOM);
@@ -90,13 +90,13 @@ void test_vector(){
         all_tests++;
     }
     {
-        Vector<double,3> vr1 = v11;
+        object<double> vr1 = v11;
         vr1.change_basis(v21);
         pass_tests += expect((v11 == vr1), "Vector has not changed after changing basis");
         all_tests++;
     }
     {
-        Vector<double,3> vr1 = v11;
+        object<double> vr1 = v11;
         vr1.change_basis(v21);
         pass_tests += expect((a1 == vr1.get_comp_at_basis(v11)), "component has not changed at the same basis");
         all_tests++;
@@ -128,4 +128,5 @@ void test_vector(){
     */
     std::cout << " Test passed : " << std::to_string(pass_tests) << "/" << std::to_string(all_tests) << std::endl;
     std::cout << " ==================== End Testing Vector ====================" << std::endl;
+
 }
