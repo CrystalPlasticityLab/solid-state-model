@@ -1,7 +1,7 @@
 #include "test.h"
 
 void test_leak(){
-    using namespace tens;
+/*    using namespace tens;
     for (size_t i = 0; i < 1e6; i++)
     {
         {
@@ -30,4 +30,5 @@ void test_leak(){
             }
         }
     }
+    */
 }

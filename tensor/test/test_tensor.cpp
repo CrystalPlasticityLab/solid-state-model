@@ -71,54 +71,60 @@ void test_tensor(){
         pass_tests += expect((t11+t21 == tr), "check += at different basis");
         all_tests++;
     }
-   {
-       auto tr = t12;
-       tr -= t22;
-       pass_tests += expect((t12-t22 == tr), "check -= at different basis");
-       all_tests++;
-   }
-   {
-       auto tr = t11 - t12;
-       auto mr = m1 - m2;
-       pass_tests += expect((tr.get_comp_at_basis(t11) == mr), "check sub at different basis");
-       all_tests++;
-   }
-   {
-       auto tr1 = t11;
-       tr1.change_basis(basis2);
-       pass_tests += expect((t11 == tr1), "Tensor has not changed after changing basis");
-       all_tests++;
-   }
-   {
-       auto tr1 = t11;
-       tr1.change_basis(basis2);
-       pass_tests += expect((m1 == tr1.get_comp_at_basis(t11)), "component has not changed at the same basis");
-       all_tests++;
-   }
-   {
-       auto tv1 = t11 * v11;
-       auto tv2 = t21 * v21;
-       pass_tests += expect((tv1.get_comp_at_basis(basis1) == tv2.get_comp_at_basis(basis2)), "check scal t.v");
-       all_tests++;
-   }
-   {
-       auto vt1 = v11 * t11;
-       auto vt2 = v21 * t21;
-       pass_tests += expect((vt1.get_comp_at_basis(basis1) == vt2.get_comp_at_basis(basis2)), "check scal v*t");
-       all_tests++;
-   }
-   {
-       auto vt1 = v11 * t11;
-       auto vt2 = transpose(t11) * v11;
-       pass_tests += expect((vt1 == vt2), "check scal v*t = tT * v");
-       all_tests++;
-   }
-   {
-       auto vt1 = v11 * t11;
-       auto vt2 = t11 * v11;
-       pass_tests += expect(!(vt1 == vt2), "check scal v*t != t*v");
-       all_tests++;
-   }
+    {
+        auto tr = t12;
+        tr -= t22;
+        pass_tests += expect((t12-t22 == tr), "check -= at different basis");
+        all_tests++;
+    }
+    {
+        auto tr = t11 - t12;
+        auto mr = m1 - m2;
+        pass_tests += expect((tr.get_comp_at_basis(t11) == mr), "check sub at different basis");
+        all_tests++;
+    }
+    {
+        auto tr1 = t11;
+        tr1.change_basis(basis2);
+        pass_tests += expect((t11 == tr1), "Tensor has not changed after changing basis");
+        all_tests++;
+    }
+    {
+        auto tr1 = t11;
+        tr1.change_basis(basis2);
+        pass_tests += expect((m1 == tr1.get_comp_at_basis(t11)), "component has not changed at the same basis");
+        all_tests++;
+    }
+    {
+        auto tv1 = t11 * v11;
+        auto tv2 = t21 * v21;
+        pass_tests += expect((tv1.get_comp_at_basis(basis1) == tv2.get_comp_at_basis(basis2)), "check scal t.v");
+        all_tests++;
+    }
+    {
+        auto vt1 = v11 * t11;
+        auto vt2 = v21 * t21;
+        pass_tests += expect((vt1.get_comp_at_basis(basis1) == vt2.get_comp_at_basis(basis2)), "check scal v*t");
+        all_tests++;
+    }
+    {
+        auto vt1 = v11 * t21;
+        auto vt2 = transpose(t21) * v11;
+        pass_tests += expect((vt1 == vt2), "check scal v*t = tT*v");
+        all_tests++;
+    }
+    {
+        auto vt1 = t11 * v21;
+        auto vt2 = v21 * transpose(t11);
+        pass_tests += expect((vt1 == vt2), "check scal t*v = v*tT");
+        all_tests++;
+    }
+    {
+        auto vt1 = v11 * t11;
+        auto vt2 = t11 * v11;
+        pass_tests += expect(!(vt1 == vt2), "check scal v*t != t*v");
+        all_tests++;
+    }
    //{
    //    auto tr1 = t11;
    //    //tr1.move_to_basis(basis2);

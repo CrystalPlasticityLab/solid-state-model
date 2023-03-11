@@ -1,9 +1,10 @@
 #pragma once
 #include "tensor/test/expect.h"
 #include "tensor/test/test.h"
-#include "tensor/basis.h"
+#include "tensor/object.h"
 #include "tensor/quat.h"
 #include "factory/factory.h"
+#include "../state-measure/state_measure.h"
 
 const size_t DIM = 3;
 std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -12,31 +13,53 @@ extern std::uniform_real_distribution<double> unidistr = std::uniform_real_distr
 
 int main() 
 {
-	using namespace tens;
-	try
-	{
+	try {
 		run_test();
-		auto basis = create_basis<double, 3>();
+		using namespace tens;
+		const auto xx = container<double>(30, 0);
+		const auto scalar = container<double>(1, 1, 0.4534535);
+		auto scalar_array1 = object<double>(10, 0, FILL_TYPE::RANDOM);
+		auto scalar_array2 = object<double>(10, 0, FILL_TYPE::RANDOM);
+		scalar_array2 += scalar_array1;
+		const auto scal(scalar_array2);
+		double value = scalar;
+
+		auto object = create_basis<double, 3>();
 		const auto b1 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
 		const auto b2 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-		auto v6 = Vector<double, 3>(std::array<double, 3>{1, 0, 0}, basis);
 		const auto m1 = Matrix<double, 3>(FILL_TYPE::RANDOM);
 		const auto m2 = Matrix<double, 3>(FILL_TYPE::RANDOM);
+		auto v6 = Vector<double, 3>(std::array<double, 3>{1, 0, 0}, object);
 		auto a3 = std::array<double, 3>{1, 0, 0};
 		auto v1 = Vector<double, 3>(a3, b1);
 		auto v2 = Vector<double, 3>(a3, b1);
 		auto v3 = v1;
 		auto v5 = std::move(v1);
-		auto v4 = Vector<double, 3>(a3, b1);
+		auto v4 = Vector<double, 3>(a3, b2);
 		auto t1 = Tensor<double, 3>(m1, b2);
 		auto t2 = Tensor<double, 3>(m2, b2);
 		auto res = m1 * m1;
 		auto vres = v4 + v3;
 		v1 = v4 - v3;
 		v1 = v4 + v3;
-		auto tvres2 = v4 * t1;
+		double vres1 = v1 * v3;
+		//auto tvres2 = v4 * t1;
 		t1 = t2 * t2;
 		t1 = t2 * 2.0;
+
+		auto state1 = StateMeasure(t1);
+		auto state2 = StateMeasure(std::move(t1));
+		return 0;
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+/*	try
+	{
+		//run_test();
+		StateMeasure sm(t2);
+
 		auto pbas = t2.get_basis_ref();
 		//bas = m2;
 		//auto vres2 = v4 * v3;
@@ -56,8 +79,14 @@ int main()
 		//std::shared_ptr<basis_base<double, 3>> ob = *ob31;
 		std::cout << ob3;
 		std::cout << ob31;
+
+		std::vector<boost::any> vect;
+		vect.push_back(ob1);
+		vect.push_back(ob3);
+		vect.push_back(b1);
+		std::cout << vect[0].type().name();
 		return 0;
-/*		std::shared_ptr<basis<double, 3>> tp;
+/*		std::shared_ptr<object<double, 3>> tp;
 		{
 			auto a = new array<double, 3>(FILL_TYPE::RANDOM);
 			auto s = new factory::state<double, 3>(b);
@@ -88,12 +117,12 @@ int main()
 			delete s;
 			delete a;
 		}
-		*/
+		
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << '\n';
 	}
-	
+	*/
 	return 0;
 }

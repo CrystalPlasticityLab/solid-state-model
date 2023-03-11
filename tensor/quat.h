@@ -9,31 +9,31 @@ namespace tens {
 	};
 
 	template<typename T>
-	class quat : public container<T, 4, 1>
+	class quat : public container<T>
 	{
 	public:
-		quat() : container<T, 4, 1>((T)0) { (*this)[0] = (T)1; };
+		quat() : container<T>(4, 1, (T)0) { (*this)[0] = (T)1; };
 		explicit quat(const quat& q) ;
-		explicit quat(const container<T, 4, 1>& q) : container<T, 4, 1>(q) {};
-		explicit quat(const T& re, const container<T, 3, 1 >& im, QUATFORM type);
+		explicit quat(const container<T>& q) : container<T>(q) {};
+		explicit quat(const T& re, const container<T>& im, QUATFORM type);
 
-		void set_im(const container<T, 3, 1>& im);
-		inline container<T, 3, 1> get_im() const;
+		void set_im(const container<T>& im);
+		inline container<T> get_im() const;
 		inline T re() const;
 
-		inline quat& operator = (const container<T, 4, 1>& v);
+		inline quat& operator = (const container<T>& v);
 		inline quat operator * (const quat& rhs) const;
 		inline quat operator * (const T& mult) const;
 		inline quat operator * () const;
 		inline quat operator ! () const;
 
-		static friend container<T, 3, 2> get_ort_matrix(const quat<T>& q);
+		static friend container<T> get_ort_matrix(const quat<T>& q);
 		//static inline matrix<T, 3> get_ort_matrix(const T& angle, const container<T, 3, 1>& axis);
 	private:
 	};
 
 	template<typename T>
-	quat<T>::quat(const T& re, const container<T, 3, 1>& im, QUATFORM type) {
+	quat<T>::quat(const T& re, const container<T>& im, QUATFORM type) {
 		T angleto2 = (T)0;
 		switch (type)
 		{
@@ -58,14 +58,14 @@ namespace tens {
 	};
 
 	template<typename T>
-	inline void quat<T>::set_im(const container<T, 3, 1>& im){
+	inline void quat<T>::set_im(const container<T>& im){
 		(*this)[1] = im[0];
 		(*this)[2] = im[1];
 		(*this)[3] = im[2];
 	}
 
 	template<typename T>
-	inline container<T, 3, 1> quat<T>::get_im() const{
+	inline container<T> quat<T>::get_im() const{
 		container<T, 3, 1> res;
 		const std::array<T, 4>& v = (*this)();
 		res[0] = v[1];
@@ -80,7 +80,7 @@ namespace tens {
 	}
 
 	template<typename T>
-	inline quat<T>& quat<T>::operator = (const container<T, 4, 1>& v){
+	inline quat<T>& quat<T>::operator = (const container<T>& v){
 		static_cast<quat<T>&>(container<T, 4, 1>::operator=(v));
 		return *this;
 	}
@@ -117,10 +117,10 @@ namespace tens {
 	}
 
 	template<typename T>
-	static container<T, 3, 2> get_ort_matrix(const quat<T>& _q){
+	static container<T> get_ort_matrix(const quat<T>& _q){
 		T wx, wy, wz, xx, yy, yz, xy, xz, zz;
 		std::array<std::array<T, 3>, 3> m;
-		container<T, 4, 1> q = get_normalize(_q);
+		container<T> q = get_normalize(_q);
 
 		xx = 2.0 * q[1] * q[1];   xy = 2.0 * q[1] * q[2];   xz = 2.0 * q[1] * q[3];
 		yy = 2.0 * q[2] * q[2];   yz = 2.0 * q[2] * q[3];   zz = 2.0 * q[3] * q[3];
@@ -129,7 +129,7 @@ namespace tens {
 		m[0][0] = 1.0 - (yy + zz); /*+*/ m[0][1] = xy - wz;               /*+*/  m[0][2] = xz + wy;				 /*+*/
 		m[1][0] = xy + wz;         /*+*/ m[1][1] = 1.0 - (xx + zz);       /*+*/	 m[1][2] = yz - wx;				 /*+*/
 		m[2][0] = xz - wy;         /*+*/ m[2][1] = yz + wx;		          /*+*/  m[2][2] = 1.0 - (xx + yy);/*+*/
-		return container<T, 3, 2>(m);//matrix<T,3>(m);
+		return container<T>(Matrix<double, 3>(m));
 	}
 
 	//template<typename T>
