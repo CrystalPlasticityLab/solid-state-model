@@ -1,8 +1,8 @@
 #include "test.h"
 
-void test_factory() {
-    using namespace tens;
-    using namespace factory;
+void test_state() {
+ /*   using namespace tens;
+    using namespace state;
 
     std::cout << " =================== Start testing Factory ===================" << std::endl;
     int all_tests = 0;
@@ -11,4 +11,5 @@ void test_factory() {
 
     std::cout << " Test passed : " << std::to_string(pass_tests) << "/" << std::to_string(all_tests) << std::endl;
     std::cout << " ==================== End Testing Tensor ====================" << std::endl;
+    */
 }

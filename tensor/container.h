@@ -41,7 +41,7 @@ namespace tens {
 			arr[8] = matrix[1][0];
 			return container<T>(3, 2, std::move(arr));
 		}
-		throw new UnHandled();
+		throw new NoImplemetationYet();
 	}
 	
 	template<typename T, size_t N>
@@ -95,7 +95,7 @@ namespace tens {
 
 		void _alloc() {
 			if (*this) {
-				throw new UnHandled();
+				throw new NoImplemetationYet();
 			}
 			static_cast<std::unique_ptr<T[]>&>(*this) = std::unique_ptr<T[]>(new T[_size]);
 		}
@@ -108,12 +108,11 @@ namespace tens {
 		size_t size() const { return _size; };
 		size_t rank() const { return _rank; };
 
-		bool is_consist(const container& c) const {
-			if (this->_dim != c._dim) {};
-			if (this->_size != c._size) {};
-			if (this->_rank != c._rank) {};
-			return true;
-		}
+		void is_consist(const container& c) const {
+			if (this->_dim != c._dim || this->_rank != c._rank) {
+				throw new ErrorMath::ShapeMismatch();
+			};
+		};
 
 		void fill_rand() {
 			for (size_t i = 0; i < _size; i++) {
@@ -174,21 +173,29 @@ namespace tens {
 			if (_size == 1) {
 				return (*this)[0];
 			}
-			throw UnHandled();
+			throw ErrorAccess::NoCastScalar();
 		}
 
 		inline container& operator= (const container& rhs) {
+#ifdef _DEBUG
+			this->is_consist(rhs);
+#endif
 			this->_copy(rhs);
 			return *this;
 		}
 
 		inline container& operator= (container&& rhs) noexcept {
+#ifdef _DEBUG
+			this->is_consist(rhs);
+#endif
 			this->_move(rhs);
 			return *this;
 		}
 
 		friend container<T> operator + (const container<T>& lhs, const container<T>& rhs) {
-			if (!lhs.is_consist(rhs)) {};
+#ifdef _DEBUG
+			lhs.is_consist(rhs);
+#endif
 			container<T> nhs(lhs.dim(), rhs.rank());
 			for (size_t i = 0; i < lhs.size(); i++)
 				nhs[i] = lhs[i] + rhs[i];
@@ -196,7 +203,9 @@ namespace tens {
 		}
 
 		friend container<T> operator - (const container<T>& lhs, const container<T>& rhs) {
-			if (!lhs.is_consist(rhs)) {};
+#ifdef _DEBUG
+			lhs.is_consist(rhs);
+#endif
 			container nhs(lhs.dim(), rhs.rank());
 			for (size_t i = 0; i < lhs.size(); i++)
 				nhs[i] = lhs[i] - rhs[i];
@@ -206,45 +215,72 @@ namespace tens {
 		friend container<T> operator * (const container<T>& lhs, const T& mul) {
 			container nhs(lhs);
 			for (size_t i = 0; i < lhs.size(); i++)
-				nhs[i] = mul*lhs[i];
+				nhs[i] *= mul;
 			return nhs;
 		}
 
 		friend container<T> operator / (const container<T>& lhs, const T& div) {
 			container nhs(lhs);
 			const T mul = T(1) / div;
+#ifdef _DEBUG
+			if (is_small_value(div)) {
+				throw new ErrorMath::DivisionByZero();
+			}
+#endif
 			for (size_t i = 0; i < lhs.size(); i++)
 				nhs[i] *= mul;
 			return nhs;
 		}
+
 
 		friend container<T> operator * (const T& mul, const container<T>& rhs) {
 			return container<T>::operator*(rhs, mul);
 		}
 
 		container& operator += (const container& rhs) {
+#ifdef _DEBUG
+			this->is_consist(rhs);
+#endif
 			container& lhs = *this;
 			for (size_t i = 0; i < _size; i++)
 				lhs[i] += rhs[i];
-			return *this;
+			return lhs;
 		}
 
 		container& operator -= (const container& rhs) {
-			if (!this->is_consist(rhs)) {};
+#ifdef _DEBUG
+			this->is_consist(rhs);
+#endif
 			container& lhs = *this;
 			for (size_t i = 0; i < _size; i++)
 				lhs[i] -= rhs[i];
-			return *this;
+			return lhs;
 		}
 
 		container& operator *= (const T& mul) {
+			container& lhs = *this;
 			for (size_t i = 0; i < _size; i++)
-				this[i] *= mul;
-			return *this;
+				lhs[i] *= mul;
+			return lhs;
+		}
+
+		container<T>& operator /= (const T& div) {
+			const T mul = T(1) / div;
+#ifdef _DEBUG
+			if (is_small_value(div)) {
+				throw new ErrorMath::DivisionByZero();
+			}
+#endif
+			container& lhs = *this;
+			for (size_t i = 0; i < _size; i++)
+				lhs *= mul;
+			return lhs;
 		}
 
 		friend bool operator == (const container<T>& lhs, const container<T>& rhs) {
-			if (!lhs.is_consist(rhs)) { return false;  };
+#ifdef _DEBUG
+			lhs.is_consist(rhs);
+#endif
 			const auto diff = lhs - rhs;
 			if (is_small_value(diff.get_norm())) {
 				return true;
@@ -261,7 +297,7 @@ namespace tens {
 				std::swap(nhs[5], nhs[8]);
 				return nhs;
 			}
-			throw UnHandled();
+			throw NoImplemetationYet();
 		}
 		 
 		T get_norm() const {
@@ -277,11 +313,13 @@ namespace tens {
 			if (m.rank() == 1) {
 				return m / m.get_norm();
 			}
-			throw UnHandled();
+			throw NoImplemetationYet();
 		}
 		// lhs * rhsT
 		friend  container<T> mat_scal_mat_transp(const  container<T>& lhs, const  container<T>& rhs) {
-			if (!lhs.is_consist(rhs)) {};
+#ifdef _DEBUG
+			lhs.is_consist(rhs);
+#endif
 			if (lhs.rank() == 2 && lhs.dim() == 3) {
 				container<T> nhs(3, 2);
 				nhs[0] = lhs[0] * rhs[0] + lhs[4] * rhs[4] + lhs[5] * rhs[5];
@@ -295,12 +333,17 @@ namespace tens {
 				nhs[8] = lhs[8] * rhs[0] + lhs[3] * rhs[4] + lhs[1] * rhs[5];
 				return nhs;
 			}
-			throw UnHandled();
+			throw NoImplemetationYet();
 		}
 	};
 
 	template<typename T>
 	container<T> operator * (const container<T>& lhs, const container<T>& rhs) {
+#ifdef _DEBUG
+		if (lhs.dim() != rhs.dim()) {
+			throw new ErrorMath::ShapeMismatch();
+		}
+#endif
 		if (lhs.dim() != rhs.dim()) {/* throw */ };
 		const size_t l_rank = lhs.rank();
 		const size_t r_rank = rhs.rank();
@@ -334,13 +377,13 @@ namespace tens {
 			nhs[2] = a[2] * m[2] + a[1] * m[6] + a[0] * m[7];
 			return nhs;
 		}else if (l_rank == 1 && r_rank == 1) {
-			container<T> nhs(1, 1);
+			container<T> nhs(1, 0);
 			const auto& a = lhs;
 			const auto& b = rhs;
 			nhs[0] = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 			return nhs;
 		}
-		throw UnHandled();
+		throw NoImplemetationYet();
 	}
 
 	template<typename T>
@@ -348,26 +391,14 @@ namespace tens {
 		out << "{ ";
 		for (size_t row = 0; row < cont.size() - 1; row++) 
 			out << cont[row] << ", ";
-		//for (size_t row = 0; row < cont.rank() - 1; row++) {
-		//	if (cont.rank() > 1) out << "{ ";
-		//	for (size_t col = 0; col < cont.dim() - 1; col++)
-		//		out << cont[row * cont.rank() + col] << ", ";
-		//	if (cont.rank() > 1) out << "} ";
-		//}
-		out << cont[cont.size() - 1] << " }\n";
+		out << cont[cont.size() - 1] << " }";
 		return out;
 	};
-
-
-//	template <typename T, size_t N>
-//	using Array = tens::container<T, N, 1>;
-//	template <typename T, size_t N>
-//	using Matrix = tens::container<T, N, 2>;
 }
 
 
 template <typename T>
-using Basis = std::shared_ptr<const tens::container<T>>;// tens::container<T, N, 2>;
-//
-template <typename T>
-using basis_cont = tens::container<T>;
+using Basis = std::shared_ptr<const tens::container<T>>;
+
+template<typename T>
+extern const Basis<T> GLOBAL_BASIS = std::make_shared<const tens::container<T>>(3, 2, tens::FILL_TYPE::INDENT);

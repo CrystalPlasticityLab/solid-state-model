@@ -10,7 +10,7 @@ namespace tens {
 	template<typename T, size_t N>
 	object<T> Tensor(const container<T>& m, const std::shared_ptr<const container<T>>& _basis) {
 		if (m.rank() != 2) {
-			throw new UnHandled();
+			throw new NoImplemetationYet();
 		}
 		return object<T>(m, _basis);
 	}
@@ -18,7 +18,7 @@ namespace tens {
 	template<typename T, size_t N>
 	object<T> Tensor(const object<T>& v) {
 		if (v.rank() != 2) {
-			throw new UnHandled();
+			throw new NoImplemetationYet();
 		}
 		return object<T>(v);
 	}
@@ -36,7 +36,7 @@ namespace tens {
 	template<typename T, size_t N>
 	object<T> Vector(const container<T>& a, const std::shared_ptr<const container<T>>& _basis) {
 		if (a.rank() != 1) {
-			throw new UnHandled();
+			throw new NoImplemetationYet();
 		}
 		return object<T>(a, _basis);
 	}
@@ -44,7 +44,7 @@ namespace tens {
 	template<typename T, size_t N>
 	object<T> Vector(const object<T>& v) {
 		if (v.rank() != 1) {
-			throw new UnHandled();
+			throw new NoImplemetationYet();
 		}
 		return object<T>(v);
 	}
@@ -59,9 +59,6 @@ namespace tens {
 
 	template<typename T>
 	static const std::shared_ptr<container<T>> EMPTY_BASIS = std::shared_ptr<container<T>>();
-
-	template<typename T>
-	static const container<T> EMPTY_CONTAINER = container<T>(0, 0, FILL_TYPE::ZERO);
 
 	template<typename T>
 	class object {
@@ -128,37 +125,35 @@ namespace tens {
 
 		object(size_t N, size_t R = 0, FILL_TYPE type = FILL_TYPE::ZERO, const Basis<T>& pbasis = EMPTY_BASIS<T>) {
 			_comp = std::make_unique<container<T>>(container<T>(N, R, type));
-			_basis = pbasis;
-		}
-
-		object(const container<T>& comp, const container<T>& object = EMPTY_CONTAINER<T>) {
-			_comp = std::make_unique<container<T>>(comp);
-			_basis = create_basis(object);
-		}
-
-		object(container<T>&& comp, const container<T>& object = EMPTY_CONTAINER<T>) noexcept {
-			_comp = std::make_unique<container<T>>(std::move(comp));
-			_basis = create_basis(object);
-		}
-
-		object(const container<T>& comp, container<T>&& object = EMPTY_CONTAINER<T>) noexcept {
-			_comp = std::make_unique<container<T>>(comp);
-			_basis = std::move(object);
-		}
-
-		object(container<T>&& comp, container<T>&& object = EMPTY_CONTAINER<T>) noexcept {
-			_comp = std::make_unique<container<T>>(std::move(comp));
-			_basis = std::move(object);
+			if (R > 0) { _basis = pbasis; }
 		}
 
 		object(const container<T>& comp, const Basis<T>& pbasis = EMPTY_BASIS<T>) {
 			_comp = std::make_unique<container<T>>(comp);
-			_basis = pbasis;
+			if (comp.rank() > 0) { _basis = pbasis; }
+		}
+
+		object(const container<T>& comp, Basis<T>&& pbasis = EMPTY_BASIS<T>) {
+			_comp = std::make_unique<container<T>>(comp);
+			if (comp.rank() > 0) { 
+				std::move(pbasis); 
+			} else {
+				pbasis.reset();
+			}
 		}
 
 		object(container<T>&& comp, const Basis<T>& pbasis = EMPTY_BASIS<T>) noexcept {
 			_comp = std::make_unique<container<T>>(std::move(comp));
-			_basis = pbasis;
+			if (comp.rank() > 0) { _basis = pbasis; }
+		}
+		
+		object(container<T>&& comp, Basis<T>&& pbasis = EMPTY_BASIS<T>) {
+			_comp = std::make_unique<container<T>>(std::move(comp));
+			if (comp.rank() > 0) { 
+				std::move(pbasis); 
+			} else {
+				pbasis.reset();
+			}
 		}
 
 		void change_basis(const object<T>& obj) {
@@ -198,7 +193,7 @@ namespace tens {
 			return *this->_comp;
 		}
 
-		basis_cont<T> get_basis_comp() const {
+		container<T> get_basis_comp() const {
 			return basis_cont<T>(*this->_basis);
 		}
 
@@ -214,14 +209,16 @@ namespace tens {
 			if (this->_comp->size() == 1) {
 				return (*this->_comp)[0];
 			}
-			else {
-				/*throw();*/
-			}
-			throw UnHandled();
+			throw ErrorAccess::NoCastScalar();
 		}
 
 		object& operator *= (const T& mul) {
 			*this->_comp *= mul;
+			return *this;
+		}
+
+		object& operator /= (const T& mul) {
+			*this->_comp /= mul;
 			return *this;
 		}
 
@@ -242,12 +239,13 @@ namespace tens {
 			return *this;
 		}
 
-		static friend bool check_ort(const basis_cont<T>& m);
+		friend bool check_ort(const container<T>& m);
 
 		static friend object<T> operator * <> (const object<T>& lhs, const object<T>& rhs);
 		static friend object<T> operator + <> (const object<T>& lhs, const object<T>& rhs);
 		static friend object<T> operator - <> (const object<T>& lhs, const object<T>& rhs);
 		static friend object<T> operator * <> (const object<T>& lhs, const T& mul);
+		static friend object<T> operator / <> (const object<T>& lhs, const T& mul);
 		static friend object<T> operator * <> (const T& mul, const object<T>& rhs);
 
 		object& operator = (const object<T>& rhs) { // copy assign
@@ -270,7 +268,10 @@ namespace tens {
 	};
 
 	template<typename T>
-	static bool check_ort(const container<T>& m) {
+	bool check_ort(const container<T>& m) {
+		if (m.rank() != 2) {
+			throw new ErrorMath::ShapeMismatch();
+		}
 		container<T> I = m * transpose(m);
 		T diag = 0;
 		T nondiag = 0;
@@ -283,7 +284,7 @@ namespace tens {
 
 	template<typename T, size_t N>
 	static Basis<T> create_basis(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
-		basis_cont<T> Q(N, 2);
+		container<T> Q(N, 2);
 		switch (type)
 		{
 		case tens::DEFAULT_ORTH_BASIS::RANDOM:
@@ -293,6 +294,9 @@ namespace tens {
 		case tens::DEFAULT_ORTH_BASIS::INDENT:
 			Q = generate_indent_ort();
 			break;
+		}
+		if (!check_ort(Q)) {
+			throw new ErrorMath::NonOrthogonal();
 		}
 		return std::make_shared<const container<T>>(Q);
 	}
@@ -308,6 +312,11 @@ namespace tens {
 	template<typename T>
 	object<T> operator * (const object<T>& lhs, const T& mul) {
 		return object<T>(*lhs._comp * mul, lhs._basis);
+	}
+
+	template<typename T>
+	object<T> operator / (const object<T>& lhs, const T& mul) {
+		return object<T>(*lhs._comp / mul, lhs._basis);
 	}
 
 	template<typename T>
@@ -366,7 +375,7 @@ namespace tens {
 		out << "{ ";
 		for (size_t idx = 0; idx < cont.size() - 1; idx++)
 			out << cont[idx] << ", ";
-		out << cont[cont.size() - 1] << " }\n";
+		out << cont[cont.size() - 1] << " }";
 		return out;
 	};
 };
