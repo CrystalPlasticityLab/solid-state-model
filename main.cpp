@@ -3,7 +3,7 @@
 #include "tensor/test/test.h"
 #include "tensor/object.h"
 #include "tensor/quat.h"
-#include "../state-measure/state_measure.h"
+#include "./state-measure/state_measure.h"
 
 const size_t DIM = 3;
 std::random_device rd;  // Will be used to obtain a seed for the random number engine
