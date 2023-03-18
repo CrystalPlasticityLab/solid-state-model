@@ -3,7 +3,8 @@
 #include "tensor/test/test.h"
 #include "tensor/object.h"
 #include "tensor/quat.h"
-#include "./state-measure/state_measure.h"
+#include "./state-measure/state.h"
+#include "./state-measure/measure.h"
 
 const size_t DIM = 3;
 std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -19,8 +20,11 @@ int main()
 	const auto gl = GLOBAL_BASIS<double>;
 	//try 
 	{
-		run_test();
+		//run_test();
 		using namespace tens;
+		double arr[90];
+		auto arr_ptr = std::unique_ptr<double>(arr);
+		//const auto yy = container<double>(30, 2, std::move(std::unique_ptr<double>(arr)));
 		const auto xx = container<double>(30, 0);
 		const auto scalar = container<double>(1, 1, 0.4534535);
 		auto scalar_array1 = object<double>(10, 0, FILL_TYPE::RANDOM);
@@ -44,6 +48,7 @@ int main()
 		auto t1 = Tensor<double, 3>(m1, b2);
 		auto t2 = Tensor<double, 3>(m2, b2);
 		auto t3 = Tensor<double, 3>(m1, b1);
+
 		// t2 = t1 / 1e-18;
 		auto res = m1 * m1;
 		auto vres = v4 + v3;
@@ -55,17 +60,21 @@ int main()
 		t1 = t2 * t2;
 		t1 = t2 * 2.0;
 
-		auto mes1 = state::Measure(t1, "F");
+		//auto B = state::Measure(R, "R");
+		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);// Tensor<double>(create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM))
+		auto state = state::create(std::move(R));
+		auto F = state::GradDeform<double>();
+		auto S = state::CaushyStress<double>();
 		auto mes2 = state::Measure(std::move(t3), "S");
-		auto mes3 = mes1;
-
+		auto mes3 = F;
 		//
-		auto B = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-		auto state = state::create(std::move(B));// State<double>(b1);
-		auto& pmes = mes1;
-		state::insert(state, pmes);
-		state::insert(state, mes2);
-		//std::cout << (*state)["F"];
+		F.update_value(t1);
+		F.integrate_value();
+		F.polar_decomposition();
+		auto& pmes = F;
+		//state::insert(state, pmes);
+		//state::insert(state, mes2);
+		std::cout << (*state)["F"];
 		auto state1 = state;
 		std::cout << *state;
 		return 0;

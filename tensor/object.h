@@ -115,6 +115,9 @@ namespace tens {
 			return mat_scal_mat_transp(*this->_basis, *object);
 		}
 	public:
+		bool is_empty() {
+			return _comp == nullptr;
+		}
 		object(const object<T>& basis_obj) { // copy ctor
 			_copy(basis_obj);
 		}
@@ -194,7 +197,7 @@ namespace tens {
 		}
 
 		container<T> get_basis_comp() const {
-			return basis_cont<T>(*this->_basis);
+			return container<T>(*this->_basis);
 		}
 
 		container<T> get_basis() const {
@@ -233,6 +236,11 @@ namespace tens {
 			return *this;
 		}
 
+		object& operator += (const container<T>& rhs) {
+			*this->_comp += rhs;
+			return *this;
+		}
+
 		object& operator -= (const object<T>& rhs) {
 			auto rhsa = rhs.get_comp_at_basis(*this);
 			*this->_comp -= rhsa;
@@ -265,6 +273,10 @@ namespace tens {
 		friend static object<T> transpose(const object<T>& m) {
 			return object<T>(transpose(m.get_comp_ref()), m.get_basis_ref());
 		}
+
+		friend static object<T> inverse(const object<T>& m) {
+			return object<T>(m.get_comp_ref().inverse(), m.get_basis_ref());
+		}
 	};
 
 	template<typename T>
@@ -283,7 +295,7 @@ namespace tens {
 	}
 
 	template<typename T, size_t N>
-	static Basis<T> create_basis(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
+	static container<T> create_orthogonal_matrix(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
 		container<T> Q(N, 2);
 		switch (type)
 		{
@@ -298,7 +310,18 @@ namespace tens {
 		if (!check_ort(Q)) {
 			throw new ErrorMath::NonOrthogonal();
 		}
-		return std::make_shared<const container<T>>(Q);
+		return Q;
+	}
+
+	template<typename T, size_t N>
+	static Basis<T> create_basis(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
+		return std::make_shared<const container<T>>(create_orthogonal_matrix<T, N>(type));
+	}
+
+	template<typename T, size_t N>
+	static object<T> create_basis_object(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
+		auto Q = create_orthogonal_matrix<T, N>(type);
+		return object<T>(Q, GLOBAL_BASIS<T>);
 	}
 
 	template<typename T, size_t N>

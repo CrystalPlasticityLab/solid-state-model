@@ -6,6 +6,7 @@ void test_tensor(){
     std::cout << " =================== Start testing Tensor ===================" << std::endl;
     int all_tests = 0;
     int pass_tests = 0;
+    const auto m_I = Matrix<double, 3>(FILL_TYPE::INDENT);
     const auto m_zero = Matrix<double, 3>(FILL_TYPE::ZERO);
     const auto m1 = Matrix<double, 3>(FILL_TYPE::RANDOM);
     const auto m2 = Matrix<double, 3>(FILL_TYPE::RANDOM);
@@ -24,6 +25,10 @@ void test_tensor(){
     const auto v11 = Vector<double, 3>(a1, basis1);
     const auto v21 = Vector<double, 3>(a1, basis2);
 
+    {
+        pass_tests += expect((m1*m1.inverse() == m_I) && (m1.inverse() * m1 == m_I), "check inverse func m*m^-1 = m^-1*m = I");
+        all_tests++;
+    }
     {
         pass_tests += expect((t_zero1==t_zero2), "equal zero Tensors");
         all_tests++;

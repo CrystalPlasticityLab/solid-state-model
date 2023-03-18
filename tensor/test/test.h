@@ -1,6 +1,7 @@
 #pragma once
 #include "../object.h"
-#include "../tensor-matrix/state-measure/state_measure.h"
+#include "../tensor-matrix/state-measure/measure.h"
+#include "../tensor-matrix/state-measure/state.h"
 #include "expect.h"
 
 void test_vector();

@@ -265,15 +265,15 @@ namespace tens {
 		}
 
 		container<T>& operator /= (const T& div) {
-			const T mul = T(1) / div;
 #ifdef _DEBUG
 			if (is_small_value(div)) {
 				throw new ErrorMath::DivisionByZero();
 			}
 #endif
+			const T mul = T(1) / div;
 			container& lhs = *this;
 			for (size_t i = 0; i < _size; i++)
-				lhs *= mul;
+				lhs[i] *= mul;
 			return lhs;
 		}
 
@@ -299,7 +299,38 @@ namespace tens {
 			}
 			throw NoImplemetationYet();
 		}
-		 
+		
+		T det() const {
+			if (_rank != 2) {
+				throw ErrorMath::ShapeMismatch();
+			} else {
+				if (_dim == 3) {
+					const container<T>& m = *this;
+					return m[0] * m[1] * m[2] - m[0] * m[3] * m[6] - m[1] * m[4] * m[7] + m[3] * m[5] * m[7] - m[2] * m[5] * m[8] + m[4] * m[6] * m[8];
+				}
+				throw NoImplemetationYet();
+			}
+		}
+
+		container<T> inverse() const {
+			T div = det();
+			if (is_small_value(div)) { // will throw ErrorMath::ShapeMismatch if not matrix
+				throw ErrorMath::DivisionByZero();
+			}
+			if (_dim == 3) {
+				container<T> inv_matr(3, 2);
+				const container<T>& m = *this;
+				// {00, 11, 22, 12, 02, 01, 21, 20, 10}
+				inv_matr[0] = m[1] * m[2] - m[3] * m[6]; inv_matr[5] = m[4] * m[6] - m[2] * m[5]; inv_matr[4] = m[3] * m[5] - m[1] * m[4];
+				inv_matr[8] = m[3] * m[7] - m[2] * m[8]; inv_matr[1] = m[0] * m[2] - m[4] * m[7]; inv_matr[3] = m[4] * m[8] - m[0] * m[3];
+				inv_matr[7] = m[6] * m[8] - m[1] * m[7]; inv_matr[6] = m[5] * m[7] - m[0] * m[6]; inv_matr[2] = m[0] * m[1] - m[5] * m[8];
+				return inv_matr/=div;
+			} else {
+				// for any dim matrix
+			}
+			throw NoImplemetationYet();
+		}
+
 		T get_norm() const {
 			T norm = T(0);
 			const auto& arr = *this;
@@ -402,3 +433,7 @@ using Basis = std::shared_ptr<const tens::container<T>>;
 
 template<typename T>
 extern const Basis<T> GLOBAL_BASIS = std::make_shared<const tens::container<T>>(3, 2, tens::FILL_TYPE::INDENT);
+template<typename T>
+extern const tens::container<T> IDENT_MATRIX = tens::container<T>(3, 2, tens::FILL_TYPE::INDENT);
+template<typename T>
+extern const tens::container<T> ZERO_MATRIX = tens::container<T>(3, 2, tens::FILL_TYPE::ZERO);
