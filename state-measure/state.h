@@ -65,8 +65,8 @@ namespace state {
 		out << "Basis    : " << *b._basis << std::endl;
 		out << "Measures : \n";
 		for (const auto& obj : b){
-			const auto& value = obj.second->value().get_comp_ref();
-			const auto& rate = obj.second->rate().get_comp_ref();
+			const auto& value = obj.second->value();
+			const auto& rate = obj.second->rate();
 			out << " - " << obj.first << " (dim=" << value.dim() << ", rank=" << value.rank() << "), value = " << value << ", rate = " << rate << std::endl;
 		}
 		return out;

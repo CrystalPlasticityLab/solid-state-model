@@ -114,6 +114,10 @@ namespace tens {
 		container<T> get_transform(const Basis<T>& object) const {
 			return mat_scal_mat_transp(*this->_basis, *object);
 		}
+
+		container<T>& comp() {
+			return *this->_comp;
+		}
 	public:
 		bool is_empty() {
 			return _comp == nullptr;

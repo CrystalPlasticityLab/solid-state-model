@@ -33,56 +33,57 @@ namespace measure {
 	};
 
 	template<typename T>
-	class Measure {
+	class Measure : public tens::object<T> {
 		std::string _name;
-		tens::object<T> _value;
-		tens::object<T> _rate;
-		tens::object<T> _value_prev;
+		tens::container<T>& _value;
+		tens::container<T> _rate;
+		tens::container<T> _value_prev;
+		tens::container<T> _rate_prev;
 		std::weak_ptr<State<T>> _state;
 		T& _dt;
 		typedef std::shared_ptr<tens::object<T>> object_ptr;
 		bool _value_updated = false;
 		bool _rate_updated = false;
 	public:
+		const tens::container<T>& rate() const { return _rate; };
+		const tens::container<T>& value() const { return this->get_comp_ref(); };
+		const tens::container<T>& value_prev() const { return _value_prev; };
 		T dt() { return _dt; };
-		const tens::object<T>& rate() const { return _rate; };
-		const tens::object<T>& value() const { return _value; };
-		const tens::object<T>& value_prev() const { return _value_prev; };
 		std::string name() { return _name; };
 		// -- TODO: add move semantic 
-		Measure(std::shared_ptr<State<T>>& state, const tens::object<T>& obj, std::string name) :
+		Measure(std::shared_ptr<State<T>>& state, const tens::object<T>& obj, std::string name) : 
 			_state(state),
 			_dt(state->dt()),
 			_name(name),
-			_value(obj),
-			_value_prev(obj),
-			_rate(obj.get_comp_ref().dim(), obj.get_comp_ref().rank(), tens::FILL_TYPE::ZERO, obj.get_basis_ref()) {
-			_rate = ZERO_MATRIX<T>;
-			this->change_basis(state->basis());
-			insert(state, *this);
-		};
-
-		Measure(std::shared_ptr<State<T>>& state, tens::object<T>&& obj, std::string name) :
-			_state(state),
-			_dt(state->dt()),
-			_name(name),
-			_value(obj),
-			_value_prev(std::move(obj)),
-			_rate(obj.get_comp_ref().dim(), obj.get_comp_ref().rank(), tens::FILL_TYPE::ZERO, obj.get_basis_ref()) {
-			_rate = ZERO_MATRIX<T>;
+			_value(static_cast<tens::container<T>&>(this->comp())),
+			_rate(obj.get_comp_ref().dim(), obj.get_comp_ref().rank(), tens::FILL_TYPE::ZERO),
+			_value_prev(obj.get_comp_ref()),
+			_rate_prev(_rate),
+			tens::object<T>(obj) {
 			this->change_basis(state->basis());
 			insert(state, *this);
 		};
 
 		template <typename P>
 		void update_rate(P&& rate) {
-			_rate_updated ? throw new RateUpdated() : _rate = std::forward<P>(rate);
+			if (_rate_updated) {
+				throw new ValueUpdated();
+			}
+			else {
+				std::swap(_rate, _rate_prev);
+				_rate = std::forward<P>(rate);
+			}
 			_rate_updated = true;
 		};
 
 		template <typename P>
 		void update_value(P&& value) {
-			_value_updated ? throw new ValueUpdated() : _value = std::forward<P>(value);
+			if (_value_updated) {
+				throw new ValueUpdated();
+			} else {
+				std::swap(_value, _value_prev);
+				_value = std::forward<P>(value);
+			}
 			_value_updated = true;
 		};
 
@@ -95,7 +96,6 @@ namespace measure {
 		};
 
 		void finalize() {
-			std::swap(_value, _value_prev);
 			_value_updated = false;
 			_rate_updated = false;
 		};
@@ -110,12 +110,6 @@ namespace measure {
 
 		void set_state(std::shared_ptr<State<T>> state) {
 			_state = state;
-		}
-
-		void change_basis(const Basis<T>& basis) {
-			_rate.change_basis(basis);
-			_value.change_basis(basis);
-			_value_prev.change_basis(basis);
 		}
 	};
 
@@ -138,14 +132,14 @@ namespace measure {
 			auto L = this->rate();
 			L *= -this->dt(); // -L*dt
 			L += IDENT_MATRIX<T>; // I - L*dt
-			Measure<T>::update_value(inverse(L) * this->value_prev());// (I - L * dt)^-1 * F
+			Measure<T>::update_value(L.inverse() * this->value_prev());// (I - L * dt)^-1 * F
 		}
 
 		std::pair<tens::object<T>, tens::object<T>> polar_decomposition() {
 			const auto& F = this->value();
 			auto V = F * transpose(F); // TODO: take sqrt !!!
-			auto R = F * inverse(V);
-
+			auto R = F * V.inverse();
+		
 			return { V, R };
 		}
 	};

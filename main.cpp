@@ -67,9 +67,9 @@ int main()
 		auto S = state::CaushyStress(state);
 		auto mes3 = F;
 		//
-		F.update_value(t1);
+		//F.update_value(t1);
 		F.integrate_value();
-		F.polar_decomposition();
+		//F.polar_decomposition();
 		auto& pmes = F;
 		//state::insert(state, pmes);
 		//state::insert(state, mes2);
