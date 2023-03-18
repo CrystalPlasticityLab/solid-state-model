@@ -18,16 +18,17 @@ namespace state {
 		T _dt;
 
 		State(Basis<T>&& basis) {
+			_dt = 0.123456;
 			_basis = std::move(basis);
 		}
 
 		template<typename P>
 		void _insert(P&& obj) {
-		//	const auto& name = obj.name();
-		//	if (this->find(name) != this->end()) {
-		//		throw ErrorAccess::Exists();
-		//	};
-		//	this->insert({ name, std::make_unique<Measure<T>>(std::forward<P>(obj)) });
+			const auto& name = obj.name();
+			if (this->find(name) != this->end()) {
+				throw ErrorAccess::Exists();
+			};
+			this->insert({ name, std::make_unique<Measure<T>>(std::forward<P>(obj)) });
 		}
 
 		State& operator = (const State&) = delete;
@@ -37,8 +38,6 @@ namespace state {
 	public:
 		const Basis<T>& basis() {
 			return _basis;
-			//auto x = _basis->value().get_comp_ref();
-			//return std::shared_ptr<const tens::container<T>>();
 		}
 		T& dt() { return _dt; };
 		template<typename T>
@@ -58,7 +57,7 @@ namespace state {
 
 	template<typename T, typename P>
 	void insert(const std::shared_ptr<State<T>>& state, P&& obj){
-		//state->_insert(obj);
+		state->_insert(obj);
 	}
 
 	template<typename T>

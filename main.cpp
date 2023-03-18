@@ -63,9 +63,8 @@ int main()
 		//auto B = state::Measure(R, "R");
 		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);// Tensor<double>(create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM))
 		auto state = state::create(std::move(R));
-		auto F = state::GradDeform<double>();
-		auto S = state::CaushyStress<double>();
-		auto mes2 = state::Measure(std::move(t3), "S");
+		auto F = state::GradDeform(state);
+		auto S = state::CaushyStress(state);
 		auto mes3 = F;
 		//
 		F.update_value(t1);

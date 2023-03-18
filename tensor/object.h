@@ -256,6 +256,11 @@ namespace tens {
 		static friend object<T> operator / <> (const object<T>& lhs, const T& mul);
 		static friend object<T> operator * <> (const T& mul, const object<T>& rhs);
 
+		object& operator = (const container<T>& rhs) { // copy assign
+			*_comp = rhs;
+			return *this;
+		}
+
 		object& operator = (const object<T>& rhs) { // copy assign
 			_copy(rhs);
 			return *this;

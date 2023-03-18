@@ -34,15 +34,15 @@ namespace measure {
 
 	template<typename T>
 	class Measure {
-		std::weak_ptr<State<T>> _state;
 		std::string _name;
+		tens::object<T> _value;
+		tens::object<T> _rate;
+		tens::object<T> _value_prev;
+		std::weak_ptr<State<T>> _state;
+		T& _dt;
 		typedef std::shared_ptr<tens::object<T>> object_ptr;
 		bool _value_updated = false;
 		bool _rate_updated = false;
-		const T& _dt;
-		tens::object<T> _rate;
-		tens::object<T> _value;
-		tens::object<T> _value_prev;
 	public:
 		T dt() { return _dt; };
 		const tens::object<T>& rate() const { return _rate; };
@@ -50,26 +50,28 @@ namespace measure {
 		const tens::object<T>& value_prev() const { return _value_prev; };
 		std::string name() { return _name; };
 		// -- TODO: add move semantic 
-		Measure(const tens::object<T>& obj, std::string name) :
-			//_state(state),
+		Measure(std::shared_ptr<State<T>>& state, const tens::object<T>& obj, std::string name) :
+			_state(state),
+			_dt(state->dt()),
 			_name(name),
 			_value(obj),
 			_value_prev(obj),
-			_dt(state->dt()),
 			_rate(obj.get_comp_ref().dim(), obj.get_comp_ref().rank(), tens::FILL_TYPE::ZERO, obj.get_basis_ref()) {
+			_rate = ZERO_MATRIX<T>;
 			this->change_basis(state->basis());
-			state->insert(std::unique_ptr<Measure<T>>(this));
+			insert(state, *this);
 		};
 
-		Measure(tens::object<T>&& obj, std::string name) :
-			//_state(state),
+		Measure(std::shared_ptr<State<T>>& state, tens::object<T>&& obj, std::string name) :
+			_state(state),
+			_dt(state->dt()),
 			_name(name),
 			_value(obj),
 			_value_prev(std::move(obj)),
-			_dt(state->dt()),
 			_rate(obj.get_comp_ref().dim(), obj.get_comp_ref().rank(), tens::FILL_TYPE::ZERO, obj.get_basis_ref()) {
+			_rate = ZERO_MATRIX<T>;
 			this->change_basis(state->basis());
-			state->insert(std::unique_ptr<Measure<T>>(this));
+			insert(state, *this);
 		};
 
 		template <typename P>
@@ -84,14 +86,12 @@ namespace measure {
 			_value_updated = true;
 		};
 
-		virtual void calc_rate() {
-			_rate_updated ? throw new RateUpdated() : _rate = (_value - _value_prev) / _dt;
-			_rate_updated = true;
+		virtual void calc_rate(){
+			update_rate((_value - _value_prev) / _dt);
 		};
 
 		virtual void integrate_value() {
-			_value_updated ? throw new ValueUpdated() : _value = _value_prev + _rate *_dt;
-			_value_updated = true;
+			update_value(_value_prev + _rate * _dt);
 		};
 
 		void finalize() {
@@ -106,6 +106,10 @@ namespace measure {
 				return *(*state.get())[name];
 			}
 			throw new StateNotLinked();
+		}
+
+		void set_state(std::shared_ptr<State<T>> state) {
+			_state = state;
 		}
 
 		void change_basis(const Basis<T>& basis) {
@@ -128,7 +132,7 @@ namespace measure {
 	template<typename T>
 	class GradDeform : public Measure<T> {
 	public:
-		GradDeform() : Measure<T>(tens::object<T>(IDENT_MATRIX<T>, state->basis()), MEASURE::STRAIN::DEFORM_GRADIENT) {};
+		GradDeform(std::shared_ptr<State<T>>& state) : Measure<T>(state, tens::object<T>(IDENT_MATRIX<T>, state->basis()), MEASURE::STRAIN::DEFORM_GRADIENT) {};
 
 		virtual void integrate_value() override {
 			auto L = this->rate();
@@ -149,6 +153,6 @@ namespace measure {
 	template<typename T>
 	class CaushyStress : public Measure<T> {
 	public:
-		CaushyStress() : Measure<T>(tens::object<T>(IDENT_MATRIX<T>, state->basis()), MEASURE::STRESS::CAUCHY) {};
+		CaushyStress(std::shared_ptr<State<T>>& state) : Measure<T>(state, tens::object<T>(ZERO_MATRIX<T>, state->basis()), MEASURE::STRESS::CAUCHY) {};
 	};
 };
