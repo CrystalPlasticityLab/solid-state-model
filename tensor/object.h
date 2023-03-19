@@ -114,7 +114,14 @@ namespace tens {
 		container<T> get_transform(const Basis<T>& object) const {
 			return mat_scal_mat_transp(*this->_basis, *object);
 		}
+
+		container<T>& comp() {
+			return *this->_comp;
+		}
 	public:
+		bool is_empty() {
+			return _comp == nullptr;
+		}
 		object(const object<T>& basis_obj) { // copy ctor
 			_copy(basis_obj);
 		}
@@ -161,7 +168,7 @@ namespace tens {
 		}
 
 		void change_basis(const Basis<T>& pbasis) {
-			_comp = std::make_unique<container<T>>(std::move(get_comp_at_basis(pbasis)));
+			*_comp = get_comp_at_basis(pbasis);
 			_reset_basis(pbasis);
 		}
 
@@ -180,7 +187,7 @@ namespace tens {
 					return comp * op;
 				}
 				else {
-					return transpose(op) * comp * op;
+					return op.transpose() * comp * op;
 				}
 			}
 		}
@@ -194,7 +201,7 @@ namespace tens {
 		}
 
 		container<T> get_basis_comp() const {
-			return basis_cont<T>(*this->_basis);
+			return container<T>(*this->_basis);
 		}
 
 		container<T> get_basis() const {
@@ -233,6 +240,11 @@ namespace tens {
 			return *this;
 		}
 
+		object& operator += (const container<T>& rhs) {
+			*this->_comp += rhs;
+			return *this;
+		}
+
 		object& operator -= (const object<T>& rhs) {
 			auto rhsa = rhs.get_comp_at_basis(*this);
 			*this->_comp -= rhsa;
@@ -247,6 +259,11 @@ namespace tens {
 		static friend object<T> operator * <> (const object<T>& lhs, const T& mul);
 		static friend object<T> operator / <> (const object<T>& lhs, const T& mul);
 		static friend object<T> operator * <> (const T& mul, const object<T>& rhs);
+
+		object& operator = (const container<T>& rhs) { // copy assign
+			*_comp = rhs;
+			return *this;
+		}
 
 		object& operator = (const object<T>& rhs) { // copy assign
 			_copy(rhs);
@@ -263,7 +280,11 @@ namespace tens {
 		}
 
 		friend static object<T> transpose(const object<T>& m) {
-			return object<T>(transpose(m.get_comp_ref()), m.get_basis_ref());
+			return object<T>(m.get_comp_ref().transpose(), m.get_basis_ref());
+		}
+
+		friend static object<T> inverse(const object<T>& m) {
+			return object<T>(m.get_comp_ref().inverse(), m.get_basis_ref());
 		}
 	};
 
@@ -272,7 +293,7 @@ namespace tens {
 		if (m.rank() != 2) {
 			throw new ErrorMath::ShapeMismatch();
 		}
-		container<T> I = m * transpose(m);
+		container<T> I = m * m.transpose();
 		T diag = 0;
 		T nondiag = 0;
 		for (size_t diagIdx = 0; diagIdx < 3; diagIdx++)
@@ -283,7 +304,7 @@ namespace tens {
 	}
 
 	template<typename T, size_t N>
-	static Basis<T> create_basis(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
+	static container<T> create_orthogonal_matrix(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
 		container<T> Q(N, 2);
 		switch (type)
 		{
@@ -298,7 +319,18 @@ namespace tens {
 		if (!check_ort(Q)) {
 			throw new ErrorMath::NonOrthogonal();
 		}
-		return std::make_shared<const container<T>>(Q);
+		return Q;
+	}
+
+	template<typename T, size_t N>
+	static Basis<T> create_basis(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
+		return std::make_shared<const container<T>>(create_orthogonal_matrix<T, N>(type));
+	}
+
+	template<typename T, size_t N>
+	static object<T> create_basis_object(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
+		auto Q = create_orthogonal_matrix<T, N>(type);
+		return object<T>(Q, GLOBAL_BASIS<T>);
 	}
 
 	template<typename T, size_t N>
