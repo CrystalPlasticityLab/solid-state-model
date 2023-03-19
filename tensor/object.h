@@ -168,7 +168,7 @@ namespace tens {
 		}
 
 		void change_basis(const Basis<T>& pbasis) {
-			_comp = std::make_unique<container<T>>(std::move(get_comp_at_basis(pbasis)));
+			*_comp = get_comp_at_basis(pbasis);
 			_reset_basis(pbasis);
 		}
 
@@ -187,7 +187,7 @@ namespace tens {
 					return comp * op;
 				}
 				else {
-					return transpose(op) * comp * op;
+					return op.transpose() * comp * op;
 				}
 			}
 		}
@@ -280,7 +280,7 @@ namespace tens {
 		}
 
 		friend static object<T> transpose(const object<T>& m) {
-			return object<T>(transpose(m.get_comp_ref()), m.get_basis_ref());
+			return object<T>(m.get_comp_ref().transpose(), m.get_basis_ref());
 		}
 
 		friend static object<T> inverse(const object<T>& m) {
@@ -293,7 +293,7 @@ namespace tens {
 		if (m.rank() != 2) {
 			throw new ErrorMath::ShapeMismatch();
 		}
-		container<T> I = m * transpose(m);
+		container<T> I = m * m.transpose();
 		T diag = 0;
 		T nondiag = 0;
 		for (size_t diagIdx = 0; diagIdx < 3; diagIdx++)

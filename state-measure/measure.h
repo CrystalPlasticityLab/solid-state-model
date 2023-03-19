@@ -1,6 +1,5 @@
 #pragma once
 #include "../tensor-matrix/tensor/object.h"
-#include <unordered_map>
 
 namespace state {
 	template<typename T>
@@ -95,7 +94,7 @@ namespace measure {
 			update_value(_value_prev + _rate * _dt);
 		};
 
-		void finalize() {
+		virtual void finalize() {
 			_value_updated = false;
 			_rate_updated = false;
 		};
@@ -111,42 +110,5 @@ namespace measure {
 		void set_state(std::shared_ptr<State<T>> state) {
 			_state = state;
 		}
-	};
-
-	namespace MEASURE {
-		namespace STRAIN {
-			const std::string DEFORM_GRADIENT = "F";
-			const std::string CAUCHY_GREEN = "C";
-		};
-		namespace STRESS {
-			const std::string CAUCHY = "S";
-		}
-	};
-
-	template<typename T>
-	class GradDeform : public Measure<T> {
-	public:
-		GradDeform(std::shared_ptr<State<T>>& state) : Measure<T>(state, tens::object<T>(IDENT_MATRIX<T>, state->basis()), MEASURE::STRAIN::DEFORM_GRADIENT) {};
-
-		virtual void integrate_value() override {
-			auto L = this->rate();
-			L *= -this->dt(); // -L*dt
-			L += IDENT_MATRIX<T>; // I - L*dt
-			Measure<T>::update_value(L.inverse() * this->value_prev());// (I - L * dt)^-1 * F
-		}
-
-		std::pair<tens::object<T>, tens::object<T>> polar_decomposition() {
-			const auto& F = this->value();
-			auto V = F * transpose(F); // TODO: take sqrt !!!
-			auto R = F * V.inverse();
-		
-			return { V, R };
-		}
-	};
-
-	template<typename T>
-	class CaushyStress : public Measure<T> {
-	public:
-		CaushyStress(std::shared_ptr<State<T>>& state) : Measure<T>(state, tens::object<T>(ZERO_MATRIX<T>, state->basis()), MEASURE::STRESS::CAUCHY) {};
 	};
 };

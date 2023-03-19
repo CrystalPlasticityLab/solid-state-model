@@ -288,10 +288,10 @@ namespace tens {
 			return false;
 		}
 
-		friend static container<T> transpose(const container<T>& m) {
-			if (m.rank() == 1) return m;
-			if (m.rank() == 2 && m.dim() == 3) {
-				container<T> nhs(m);
+		container<T> transpose() const {
+			if (_rank == 1) return *this;
+			if (_rank == 2 && _dim == 3) {
+				container<T> nhs(*this);
 				std::swap(nhs[3], nhs[6]);
 				std::swap(nhs[4], nhs[7]);
 				std::swap(nhs[5], nhs[8]);

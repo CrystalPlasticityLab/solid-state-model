@@ -5,6 +5,8 @@
 #include "tensor/quat.h"
 #include "./state-measure/state.h"
 #include "./state-measure/measure.h"
+#include "./state-measure/strain.h"
+#include "./state-measure/stress.h"
 
 const size_t DIM = 3;
 std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -20,7 +22,7 @@ int main()
 	const auto gl = GLOBAL_BASIS<double>;
 	//try 
 	{
-		//run_test();
+		run_test();
 		using namespace tens;
 		double arr[90];
 		auto arr_ptr = std::unique_ptr<double>(arr);
@@ -63,8 +65,8 @@ int main()
 		//auto B = state::Measure(R, "R");
 		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);// Tensor<double>(create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM))
 		auto state = state::create(std::move(R));
-		auto F = state::GradDeform(state);
-		auto S = state::CaushyStress(state);
+		auto F = measure::strain::GradDeform(state);
+		auto S = measure::stress::CaushyStress(state);
 		auto mes3 = F;
 		//
 		//F.update_value(t1);
