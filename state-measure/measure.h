@@ -6,30 +6,88 @@ namespace state {
 	class State;
 };
 
+namespace numerical_schema {
+	template<typename T>
+	class DefaultSchema {
+		T& _dt;
+		tens::container<T>& _value;
+		tens::container<T> _rate;
+		tens::container<T> _value_prev;
+		tens::container<T> _rate_prev;
+	protected:
+		virtual void calc_rate() {
+			update_rate((_value - _value_prev) / _dt);
+		};
+
+		virtual void integrate_value() {
+			update_value(_value_prev + _rate * _dt);
+		};
+	public:
+		DefaultSchema(const tens::container<T>& value) :
+			_value(value),
+			_rate(value.dim(), value.rank(), T(0)),
+			_value_prev(value),
+			_rate_prev(value.dim(), value.rank(), T(0)) {
+		};
+
+		template <typename P>
+		void update_rate(P&& rate) {
+			if (_rate_updated) {
+				throw new error::ValueUpdated();
+			}
+			else {
+				std::swap(_rate, _rate_prev);
+				_rate = std::forward<P>(rate);
+			}
+			_rate_updated = true;
+		};
+
+		template <typename P>
+		void update_value(P&& value) {
+			if (_value_updated) {
+				throw new error::ValueUpdated();
+			}
+			else {
+				std::swap(_value, _value_prev);
+				_value = std::forward<P>(value);
+			}
+			_value_updated = true;
+		};
+
+		virtual void init() {
+			_value_updated = false;
+			_rate_updated = false;
+		};
+
+		virtual void finalize() {
+		};
+	};
+}
 namespace measure {
 	using namespace state;
 
-
-	class ValueUpdated : public std::exception {
-	public:
-		virtual const char* what() const noexcept {
-			return "Measure::value was updated twice";
+	namespace error {
+		class ValueUpdated : public std::exception {
+		public:
+			virtual const char* what() const noexcept {
+				return "Measure::value was updated twice";
+			};
 		};
-	};
 
-	class RateUpdated : public std::exception {
-	public:
-		virtual const char* what() const noexcept {
-			return "Measure::rate was updated twice";
+		class RateUpdated : public std::exception {
+		public:
+			virtual const char* what() const noexcept {
+				return "Measure::rate was updated twice";
+			};
 		};
-	};
 
-	class StateNotLinked : public std::exception {
-	public:
-		virtual const char* what() const noexcept {
-			return "Measure::state not linked or alredy has been destroyed";
+		class StateNotLinked : public std::exception {
+		public:
+			virtual const char* what() const noexcept {
+				return "Measure::state not linked or alredy has been destroyed";
+			};
 		};
-	};
+	}
 
 	template<typename T>
 	class Measure : public tens::object<T> {
@@ -40,12 +98,11 @@ namespace measure {
 		tens::container<T> _rate_prev;
 		std::weak_ptr<State<T>> _state;
 		T& _dt;
-		typedef std::shared_ptr<tens::object<T>> object_ptr;
 		bool _value_updated = false;
 		bool _rate_updated = false;
 	public:
 		const tens::container<T>& rate() const { return _rate; };
-		const tens::container<T>& value() const { return this->get_comp_ref(); };
+		const tens::container<T>& value() const { return _value; };
 		const tens::container<T>& value_prev() const { return _value_prev; };
 		T dt() { return _dt; };
 		std::string name() { return _name; };
@@ -66,7 +123,7 @@ namespace measure {
 		template <typename P>
 		void update_rate(P&& rate) {
 			if (_rate_updated) {
-				throw new ValueUpdated();
+				throw new error::ValueUpdated();
 			}
 			else {
 				std::swap(_rate, _rate_prev);
@@ -78,7 +135,7 @@ namespace measure {
 		template <typename P>
 		void update_value(P&& value) {
 			if (_value_updated) {
-				throw new ValueUpdated();
+				throw new error::ValueUpdated();
 			} else {
 				std::swap(_value, _value_prev);
 				_value = std::forward<P>(value);
@@ -94,9 +151,12 @@ namespace measure {
 			update_value(_value_prev + _rate * _dt);
 		};
 
-		virtual void finalize() {
+		virtual void init() {
 			_value_updated = false;
 			_rate_updated = false;
+		}
+
+		virtual void finalize() {
 		};
 
 		// access by const ref to other Measures in the State
@@ -104,7 +164,7 @@ namespace measure {
 			if (std::shared_ptr<State<T>> state = this->_state.lock()) {
 				return *(*state.get())[name];
 			}
-			throw new StateNotLinked();
+			throw new error::StateNotLinked();
 		}
 
 		void set_state(std::shared_ptr<State<T>> state) {

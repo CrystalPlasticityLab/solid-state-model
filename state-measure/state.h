@@ -40,6 +40,7 @@ namespace state {
 			return _basis;
 		}
 		T& dt() { return _dt; };
+		void set_time_integration_step(T dt) { _dt = dt; };
 		template<typename T>
 		friend std::ostream& operator<< (std::ostream& o, const State<T>& b);
 
