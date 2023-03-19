@@ -293,14 +293,14 @@ namespace tens {
 		if (m.rank() != 2) {
 			throw new ErrorMath::ShapeMismatch();
 		}
-		container<T> I = m * m.transpose();
+		const container<T> I = m * m.transpose();
 		T diag = 0;
 		T nondiag = 0;
 		for (size_t diagIdx = 0; diagIdx < 3; diagIdx++)
 			diag += I[diagIdx];
 		for (size_t nonDiagIdx = 3; nonDiagIdx < 9; nonDiagIdx++)
 			nondiag += I[nonDiagIdx];
-		return (is_small_value<T>(abs(diag - (T)m.dim()) + abs(nondiag)) ? true : false);
+		return (math::is_small_value<T>(abs(diag - (T)m.dim()) + abs(nondiag)) ? true : false);
 	}
 
 	template<typename T, size_t N>

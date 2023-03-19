@@ -20,9 +20,9 @@ namespace measure {
 				Measure<T>::update_value(L.inverse() * this->value_prev());// (I - L * dt)^-1 * F
 			}
 
-			std::pair<tens::object<T>, tens::object<T>> polar_decomposition() {
+			std::pair<tens::container<T>, tens::container<T>> polar_decomposition() {
 				const auto& F = this->value();
-				auto V = F * transpose(F); // TODO: take sqrt !!!
+				auto V = F * F.transpose(); // TODO: take sqrt !!!
 				auto R = F * V.inverse();
 		
 				return { V, R };

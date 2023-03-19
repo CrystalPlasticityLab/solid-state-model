@@ -7,13 +7,12 @@
 #include <cassert>
 #include <utility>
 #include "error.h"
+#include "math.h"
 
 extern std::mt19937 gen;       // Standard mersenne_twister_engine seeded with rd()
 extern std::uniform_real_distribution<double> unidistr;
 
 namespace tens {
-	template<typename T> bool is_not_small_value(T value);
-	template<typename T> bool is_small_value(T value);
 
 	enum class FILL_TYPE {
 		ZERO,
@@ -71,6 +70,11 @@ namespace tens {
 		size_t _dim;
 		size_t _size;
 		size_t _rank;
+
+		void _copy(const T* ptr) {
+			memcpy(this->get(), ptr, _size * sizeof(T));
+		}
+
 		void _copy(const container& c) {
 			this->_dim = c._dim;
 			this->_size = c._size;
@@ -103,6 +107,7 @@ namespace tens {
 		void _free() {
 			this->reset();
 		}
+
 	public:
 		size_t dim()  const { return _dim; };
 		size_t size() const { return _size; };
@@ -124,8 +129,7 @@ namespace tens {
 			std::fill(this->get(), this->get() + _size, val);
 		};
 
-		container(size_t N, size_t R, std::unique_ptr<T[]>&& pointer) : std::unique_ptr<T[]>(std::move(pointer)), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {
-		};
+		container(size_t N, size_t R, std::unique_ptr<T[]>&& pointer) : std::unique_ptr<T[]>(std::move(pointer)), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {};
 
 		container(size_t N, size_t R, FILL_TYPE type) : std::unique_ptr<T[]>(), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {
 			_alloc();
@@ -176,6 +180,10 @@ namespace tens {
 			throw ErrorAccess::NoCastScalar();
 		}
 
+		inline container& operator= (const T* ptr) {
+			_copy(ptr);
+		}
+
 		inline container& operator= (const container& rhs) {
 #ifdef _DEBUG
 			this->is_consist(rhs);
@@ -192,7 +200,7 @@ namespace tens {
 			return *this;
 		}
 
-		friend container<T> operator + (const container<T>& lhs, const container<T>& rhs) {
+		[[nodiscard]] inline friend container<T> operator + (const container<T>& lhs, const container<T>& rhs) {
 #ifdef _DEBUG
 			lhs.is_consist(rhs);
 #endif
@@ -202,7 +210,7 @@ namespace tens {
 			return nhs;
 		}
 
-		friend container<T> operator - (const container<T>& lhs, const container<T>& rhs) {
+		[[nodiscard]] inline friend container<T> operator - (const container<T>& lhs, const container<T>& rhs) {
 #ifdef _DEBUG
 			lhs.is_consist(rhs);
 #endif
@@ -212,18 +220,18 @@ namespace tens {
 			return nhs;
 		}
 
-		friend container<T> operator * (const container<T>& lhs, const T& mul) {
+		[[nodiscard]] inline friend container<T> operator * (const container<T>& lhs, const T& mul) {
 			container nhs(lhs);
 			for (size_t i = 0; i < lhs.size(); i++)
 				nhs[i] *= mul;
 			return nhs;
 		}
 
-		friend container<T> operator / (const container<T>& lhs, const T& div) {
+		[[nodiscard]] inline friend container<T> operator / (const container<T>& lhs, const T& div) {
 			container nhs(lhs);
 			const T mul = T(1) / div;
 #ifdef _DEBUG
-			if (is_small_value(div)) {
+			if (math::is_small_value(div)) {
 				throw new ErrorMath::DivisionByZero();
 			}
 #endif
@@ -232,8 +240,7 @@ namespace tens {
 			return nhs;
 		}
 
-
-		friend container<T> operator * (const T& mul, const container<T>& rhs) {
+		[[nodiscard]] inline friend container<T> operator * (const T& mul, const container<T>& rhs) {
 			return container<T>::operator*(rhs, mul);
 		}
 
@@ -266,7 +273,7 @@ namespace tens {
 
 		container<T>& operator /= (const T& div) {
 #ifdef _DEBUG
-			if (is_small_value(div)) {
+			if (math::is_small_value(div)) {
 				throw new ErrorMath::DivisionByZero();
 			}
 #endif
@@ -282,13 +289,13 @@ namespace tens {
 			lhs.is_consist(rhs);
 #endif
 			const auto diff = lhs - rhs;
-			if (is_small_value(diff.get_norm())) {
+			if (math::is_small_value(diff.get_norm())) {
 				return true;
 			}
 			return false;
 		}
 
-		container<T> transpose() const {
+		[[nodiscard]] container<T> transpose() const {
 			if (_rank == 1) return *this;
 			if (_rank == 2 && _dim == 3) {
 				container<T> nhs(*this);
@@ -305,26 +312,17 @@ namespace tens {
 				throw ErrorMath::ShapeMismatch();
 			} else {
 				if (_dim == 3) {
-					const container<T>& m = *this;
-					return m[0] * m[1] * m[2] - m[0] * m[3] * m[6] - m[1] * m[4] * m[7] + m[3] * m[5] * m[7] - m[2] * m[5] * m[8] + m[4] * m[6] * m[8];
+					return math::dim3::det_mat(this->get());
 				}
 				throw NoImplemetationYet();
 			}
 		}
 
-		container<T> inverse() const {
-			T div = det();
-			if (is_small_value(div)) { // will throw ErrorMath::ShapeMismatch if not matrix
-				throw ErrorMath::DivisionByZero();
-			}
+		[[nodiscard]] container<T> inverse() const {
 			if (_dim == 3) {
 				container<T> inv_matr(3, 2);
-				const container<T>& m = *this;
-				// {00, 11, 22, 12, 02, 01, 21, 20, 10}
-				inv_matr[0] = m[1] * m[2] - m[3] * m[6]; inv_matr[5] = m[4] * m[6] - m[2] * m[5]; inv_matr[4] = m[3] * m[5] - m[1] * m[4];
-				inv_matr[8] = m[3] * m[7] - m[2] * m[8]; inv_matr[1] = m[0] * m[2] - m[4] * m[7]; inv_matr[3] = m[4] * m[8] - m[0] * m[3];
-				inv_matr[7] = m[6] * m[8] - m[1] * m[7]; inv_matr[6] = m[5] * m[7] - m[0] * m[6]; inv_matr[2] = m[0] * m[1] - m[5] * m[8];
-				return inv_matr/=div;
+				math::dim3::inv_mat(this->get(), inv_matr.get());
+				return inv_matr;
 			} else {
 				// for any dim matrix
 			}
@@ -340,7 +338,7 @@ namespace tens {
 			return sqrt(norm);
 		}
 
-		friend static container<T> get_normalize(const container<T>& m) {
+		[[nodiscard]] friend static container<T> get_normalize(const container<T>& m) {
 			if (m.rank() == 1) {
 				return m / m.get_norm();
 			}
@@ -353,15 +351,7 @@ namespace tens {
 #endif
 			if (lhs.rank() == 2 && lhs.dim() == 3) {
 				container<T> nhs(3, 2);
-				nhs[0] = lhs[0] * rhs[0] + lhs[4] * rhs[4] + lhs[5] * rhs[5];
-				nhs[1] = lhs[1] * rhs[1] + lhs[3] * rhs[3] + lhs[8] * rhs[8];
-				nhs[2] = lhs[2] * rhs[2] + lhs[6] * rhs[6] + lhs[7] * rhs[7];
-				nhs[3] = lhs[3] * rhs[2] + lhs[1] * rhs[6] + lhs[8] * rhs[7];
-				nhs[4] = lhs[4] * rhs[2] + lhs[5] * rhs[6] + lhs[0] * rhs[7];
-				nhs[5] = lhs[5] * rhs[1] + lhs[4] * rhs[3] + lhs[0] * rhs[8];
-				nhs[6] = lhs[6] * rhs[1] + lhs[2] * rhs[3] + lhs[7] * rhs[8];
-				nhs[7] = lhs[7] * rhs[0] + lhs[2] * rhs[4] + lhs[6] * rhs[5];
-				nhs[8] = lhs[8] * rhs[0] + lhs[3] * rhs[4] + lhs[1] * rhs[5];
+				math::dim3::mat_scal_mat_transp(lhs.get(), rhs.get(), nhs.get());
 				return nhs;
 			}
 			throw NoImplemetationYet();
@@ -369,49 +359,30 @@ namespace tens {
 	};
 
 	template<typename T>
-	container<T> operator * (const container<T>& lhs, const container<T>& rhs) {
+	[[nodiscard]] container<T> operator * (const container<T>& lhs, const container<T>& rhs) {
 #ifdef _DEBUG
 		if (lhs.dim() != rhs.dim()) {
 			throw new ErrorMath::ShapeMismatch();
 		}
 #endif
-		if (lhs.dim() != rhs.dim()) {/* throw */ };
 		const size_t l_rank = lhs.rank();
 		const size_t r_rank = rhs.rank();
 
 		if (l_rank == 2 && r_rank == 2) {
 			container<T> nhs(3, 2);
-			nhs[0] = lhs[0] * rhs[0] + lhs[4] * rhs[7] + lhs[5] * rhs[8];
-			nhs[1] = lhs[1] * rhs[1] + lhs[8] * rhs[5] + lhs[3] * rhs[6];
-			nhs[2] = lhs[2] * rhs[2] + lhs[6] * rhs[3] + lhs[7] * rhs[4];
-			nhs[3] = lhs[3] * rhs[2] + lhs[1] * rhs[3] + lhs[8] * rhs[4];
-			nhs[4] = lhs[4] * rhs[2] + lhs[5] * rhs[3] + lhs[0] * rhs[4];
-			nhs[5] = lhs[5] * rhs[1] + lhs[0] * rhs[5] + lhs[4] * rhs[6];
-			nhs[6] = lhs[6] * rhs[1] + lhs[7] * rhs[5] + lhs[2] * rhs[6];
-			nhs[7] = lhs[7] * rhs[0] + lhs[2] * rhs[7] + lhs[6] * rhs[8];
-			nhs[8] = lhs[8] * rhs[0] + lhs[3] * rhs[7] + lhs[1] * rhs[8];
+			math::dim3::mat_scal_mat(lhs.get(), rhs.get(), nhs.get());
 			return nhs;
 		} else 	if (l_rank == 1 && r_rank == 2) {
-			const auto& a = lhs;
-			const auto& m = rhs;
 			container<T> nhs(3, 1);
-			nhs[0] = a[0] * m[0] + a[2] * m[7] + a[1] * m[8];
-			nhs[1] = a[1] * m[1] + a[0] * m[5] + a[2] * m[6];
-			nhs[2] = a[2] * m[2] + a[1] * m[3] + a[0] * m[4];
+			math::dim3::vect_scal_mat(lhs.get(), rhs.get(), nhs.get());
 			return nhs;
 		} else 	if (l_rank == 2 && r_rank == 1) {
-			const auto& a = rhs;
-			const auto& m = lhs;
 			container<T> nhs(3, 1);
-			nhs[0] = a[0] * m[0] + a[2] * m[4] + a[1] * m[5];
-			nhs[1] = a[1] * m[1] + a[2] * m[3] + a[0] * m[8];
-			nhs[2] = a[2] * m[2] + a[1] * m[6] + a[0] * m[7];
+			math::dim3::mat_scal_vect(lhs.get(), rhs.get(), nhs.get());
 			return nhs;
 		}else if (l_rank == 1 && r_rank == 1) {
 			container<T> nhs(1, 0);
-			const auto& a = lhs;
-			const auto& b = rhs;
-			nhs[0] = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+			nhs[0] = math::dim3::vect_scal_vect(lhs.get(), rhs.get());
 			return nhs;
 		}
 		throw NoImplemetationYet();

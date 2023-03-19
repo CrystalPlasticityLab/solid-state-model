@@ -1,15 +1,16 @@
 #pragma once
 #include "quat.h"
+#include "math.h"
 
-template <> bool tens::is_not_small_value(long double value) { return (abs(value) > 1e-13) ? true : false;}
-template <> bool tens::is_not_small_value(double      value) { return (abs(value) > 1e-13) ? true : false;}
-template <> bool tens::is_not_small_value(float       value) { return (abs(value) > 1e-7f) ? true : false;}
-template <> bool tens::is_not_small_value(int         value) { return (abs(value) == 0) ? false : true; }
+template <> bool math::is_not_small_value(long double value) { return (abs(value) > 1e-13) ? true : false;}
+template <> bool math::is_not_small_value(double      value) { return (abs(value) > 1e-13) ? true : false;}
+template <> bool math::is_not_small_value(float       value) { return (abs(value) > 1e-7f) ? true : false;}
+template <> bool math::is_not_small_value(int         value) { return (abs(value) == 0) ? false : true; }
 
-template <> bool tens::is_small_value(long double value) { return (abs(value) < 1e-13) ? true : false;}
-template <> bool tens::is_small_value(double      value) { return (abs(value) < 1e-13) ? true : false;}
-template <> bool tens::is_small_value(float       value) { return (abs(value) < 1e-7f) ? true : false;}
-template <> bool tens::is_small_value(int         value) { return (abs(value) == 0) ? true : false; }
+template <> bool math::is_small_value(long double value) { return (abs(value) < 1e-13) ? true : false;}
+template <> bool math::is_small_value(double      value) { return (abs(value) < 1e-13) ? true : false;}
+template <> bool math::is_small_value(float       value) { return (abs(value) < 1e-7f) ? true : false;}
+template <> bool math::is_small_value(int         value) { return (abs(value) == 0) ? true : false; }
 
 
 tens::container<double> tens::generate_rand_ort() {
