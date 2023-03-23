@@ -180,8 +180,9 @@ namespace tens {
 			throw ErrorAccess::NoCastScalar();
 		}
 
-		inline container& operator= (const T* ptr) {
-			_copy(ptr);
+		inline container& operator= (const T value) {
+			fill_value(value);
+			return *this;
 		}
 
 		inline container& operator= (const container& rhs) {

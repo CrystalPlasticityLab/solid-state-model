@@ -407,7 +407,7 @@ namespace tens {
 		out << "{ ";
 		for (size_t idx = 0; idx < cont.size() - 1; idx++)
 			out << cont[idx] << ", ";
-		out << cont[cont.size() - 1] << " }";
+		out << cont[cont.size() - 1] << " } \n";
 		return out;
 	};
 };
