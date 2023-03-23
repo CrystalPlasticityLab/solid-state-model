@@ -9,106 +9,106 @@ namespace state {
 namespace measure {
 	using namespace state;
 
-
-	class ValueUpdated : public std::exception {
-	public:
-		virtual const char* what() const noexcept {
-			return "Measure::value was updated twice";
+	namespace error {
+		class StateNotLinked : public std::exception {
+		public:
+			virtual const char* what() const noexcept {
+				return "Measure::state not linked or alredy has been destroyed";
+			};
 		};
-	};
+	}
 
-	class RateUpdated : public std::exception {
-	public:
-		virtual const char* what() const noexcept {
-			return "Measure::rate was updated twice";
+	template<typename Base>
+	class MeasureAbstract : public Base {
+	protected:
+		Base& _value;
+		Base _rate;
+		
+		template <typename P>
+		void update_rate(P&& rate) {
+			_rate = std::forward<P>(rate);
 		};
-	};
 
-	class StateNotLinked : public std::exception {
+		template <typename P>
+		void update_value(P&& value) {
+			_value = std::forward<P>(value);
+		};
+
 	public:
-		virtual const char* what() const noexcept {
-			return "Measure::state not linked or alredy has been destroyed";
+		MeasureAbstract(Base& value) : Base(value),
+			_value(static_cast<Base&>(*this)),
+			_rate(value) {
+			_rate = 0;
 		};
 	};
 
 	template<typename T>
-	class Measure : public tens::object<T> {
+	class StateMeasure : public tens::object<T> {
 		std::string _name;
 		tens::container<T>& _value;
 		tens::container<T> _rate;
 		tens::container<T> _value_prev;
 		tens::container<T> _rate_prev;
 		std::weak_ptr<State<T>> _state;
-		T& _dt;
-		typedef std::shared_ptr<tens::object<T>> object_ptr;
-		bool _value_updated = false;
-		bool _rate_updated = false;
-	public:
-		const tens::container<T>& rate() const { return _rate; };
-		const tens::container<T>& value() const { return this->get_comp_ref(); };
-		const tens::container<T>& value_prev() const { return _value_prev; };
-		T dt() { return _dt; };
-		std::string name() { return _name; };
-		// -- TODO: add move semantic 
-		Measure(std::shared_ptr<State<T>>& state, const tens::object<T>& obj, std::string name) : 
-			_state(state),
-			_dt(state->dt()),
-			_name(name),
-			_value(static_cast<tens::container<T>&>(this->comp())),
-			_rate(obj.get_comp_ref().dim(), obj.get_comp_ref().rank(), tens::FILL_TYPE::ZERO),
-			_value_prev(obj.get_comp_ref()),
-			_rate_prev(_rate),
-			tens::object<T>(obj) {
-			this->change_basis(state->basis());
-			insert(state, *this);
-		};
-
+	protected:
 		template <typename P>
 		void update_rate(P&& rate) {
-			if (_rate_updated) {
-				throw new ValueUpdated();
-			}
-			else {
-				std::swap(_rate, _rate_prev);
-				_rate = std::forward<P>(rate);
-			}
-			_rate_updated = true;
+			std::swap(_rate, _rate_prev);
+			_rate = std::forward<P>(rate);
 		};
 
 		template <typename P>
 		void update_value(P&& value) {
-			if (_value_updated) {
-				throw new ValueUpdated();
-			} else {
-				std::swap(_value, _value_prev);
-				_value = std::forward<P>(value);
-			}
-			_value_updated = true;
+			std::swap(_value, _value_prev);
+			_value = std::forward<P>(value);
 		};
 
-		virtual void calc_rate(){
-			update_rate((_value - _value_prev) / _dt);
+		virtual void calc_rate(T dt) {
+			update_rate((_value - _value_prev) / dt);
 		};
 
-		virtual void integrate_value() {
-			update_value(_value_prev + _rate * _dt);
+		virtual void integrate_value(T dt) {
+			update_value(_value_prev + _rate * dt);
 		};
 
-		virtual void finalize() {
-			_value_updated = false;
-			_rate_updated = false;
+		virtual void rate_equation() {};
+		virtual void finit_equation() {};
+
+		tens::container<T>& rate() { return _rate; };
+		tens::container<T>& value() { return _value; };
+		tens::container<T>& rate_prev() { return _rate_prev; };
+		tens::container<T>& value_prev() { return _value_prev; };
+	public:
+		const tens::container<T>& get_rate() const { return _rate; };
+		const tens::container<T>& get_value() const { return _value; };
+		std::string name() const { return _name; };
+		// -- TODO: add move semantic 
+		StateMeasure(std::shared_ptr<State<T>>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type = tens::FILL_TYPE::ZERO) :
+			tens::object<T>(dim, rank, type, state->basis()),
+			_state(state),
+			_name(name),
+			_value(this->comp()), // link ref
+			_rate(dim, rank, tens::FILL_TYPE::ZERO),
+			_value_prev(_value),
+			_rate_prev(_rate) {
 		};
+
+		StateMeasure(StateMeasure&& measure) : 
+			tens::object<T>(std::move(measure)),
+			_value(this->comp()),
+			_name(measure._name),
+			_rate(std::move(measure._rate)),
+			_value_prev(std::move(measure._value_prev)),
+			_rate_prev(std::move(measure._rate_prev)),
+			_state(measure._state){
+		}
 
 		// access by const ref to other Measures in the State
-		const Measure<T>& operator[] (std::string name) {
+		const StateMeasure<T>& operator[] (std::string name) {
 			if (std::shared_ptr<State<T>> state = this->_state.lock()) {
 				return *(*state.get())[name];
 			}
-			throw new StateNotLinked();
-		}
-
-		void set_state(std::shared_ptr<State<T>> state) {
-			_state = state;
+			throw new error::StateNotLinked();
 		}
 	};
 };

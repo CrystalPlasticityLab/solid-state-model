@@ -9,24 +9,25 @@ namespace measure {
 		const std::string CAUCHY_GREEN = "C";
 
 		template<typename T>
-		class GradDeform : public Measure<T> {
+		class GradDeform : public StateMeasure<T> {
 		public:
-			GradDeform(std::shared_ptr<State<T>>& state) : Measure<T>(state, tens::object<T>(IDENT_MATRIX<T>, state->basis()), DEFORM_GRADIENT) {};
+			GradDeform(std::shared_ptr<State<T>>& state) : StateMeasure<T>(state, 3, 2, DEFORM_GRADIENT, tens::FILL_TYPE::INDENT) {};
 
-			virtual void integrate_value() override {
+			virtual void integrate_value(T dt) override {
 				auto L = this->rate();
-				L *= -this->dt(); // -L*dt
+				L *= -dt; // -L*dt
 				L += IDENT_MATRIX<T>; // I - L*dt
-				Measure<T>::update_value(L.inverse() * this->value_prev());// (I - L * dt)^-1 * F
+				StateMeasure<T>::update_value(L.inverse() * this->value_prev());// (I - L * dt)^-1 * F
 			}
 
 			std::pair<tens::container<T>, tens::container<T>> polar_decomposition() {
 				const auto& F = this->value();
 				auto V = F * F.transpose(); // TODO: take sqrt !!!
 				auto R = F * V.inverse();
-		
+
 				return { V, R };
-			}
+			};
 		};
 	};
+
 };

@@ -3,6 +3,7 @@
 #include "tensor/test/test.h"
 #include "tensor/object.h"
 #include "tensor/quat.h"
+#include "./state-measure/schema.h"
 #include "./state-measure/state.h"
 #include "./state-measure/measure.h"
 #include "./state-measure/strain.h"
@@ -28,7 +29,8 @@ int main()
 		auto arr_ptr = std::unique_ptr<double>(arr);
 		//const auto yy = container<double>(30, 2, std::move(std::unique_ptr<double>(arr)));
 		const auto xx = container<double>(30, 0);
-		const auto scalar = container<double>(1, 1, 0.4534535);
+		auto scalar = container<double>(1, 1, 0.4534535);
+		auto scalar_array = container<double>(10, 2, 0.4534535);
 		auto scalar_array1 = object<double>(10, 0, FILL_TYPE::RANDOM);
 		auto scalar_array2 = object<double>(10, 0, FILL_TYPE::RANDOM);
 		scalar_array2 += scalar_array1;
@@ -65,17 +67,14 @@ int main()
 		//auto B = state::Measure(R, "R");
 		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);// Tensor<double>(create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM))
 		auto state = state::create(std::move(R));
-		auto F = measure::strain::GradDeform(state);
-		auto S = measure::stress::CaushyStress(state);
-		auto mes3 = F;
-		//
-		//F.update_value(t1);
-		F.integrate_value();
-		F.polar_decomposition();
-		auto& pmes = F;
-		//state::insert(state, pmes);
-		//state::insert(state, mes2);
-		std::cout << (*state)["F"];
+
+		auto ma = measure::MeasureAbstract(scalar_array);
+		state::add(measure::strain::DEFORM_GRADIENT, state, numerical_schema::type_schema::FINITE_ASSIGN);
+		state::add(measure::stress::CAUCHY, state, numerical_schema::type_schema::FINITE_ASSIGN);
+		numerical_schema::DefaultSchema(numerical_schema::type_schema::FINITE_ASSIGN, measure::stress::CaushyStress<double>(state), state);
+
+		std::cout << (*(*state)["F"]);
+		state->step();
 		auto state1 = state;
 		std::cout << *state;
 		return 0;
