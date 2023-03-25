@@ -66,10 +66,9 @@ int main()
 		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);// Tensor<double>(create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM))
 		auto state = state::create(std::move(R));
 
-		state::add<measure::strain::GradDeform, double>(state, numerical_schema::type_schema::RATE_INTEGRATE);
-		state::add<measure::stress::CaushyStress, double>(state, numerical_schema::type_schema::RATE_INTEGRATE);
+		state::add<measure::strain::GradDeform, double>(state, numerical_schema::type_schema::RATE_ASSIGN);
+		state::add<measure::stress::CaushyStress, double>(state, numerical_schema::type_schema::RATE_CALCULATE);
 
-		//std::cout << (*(*state)["F"]);
 		state->step();
 		auto state1 = state;
 		std::cout << *state;

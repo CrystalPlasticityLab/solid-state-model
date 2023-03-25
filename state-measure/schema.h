@@ -62,9 +62,9 @@ namespace numerical_schema {
 
 	enum class type_schema {
 		RATE_ASSIGN,    // dX(n+1) := dx_new, X(n+1) = X(n) + dX(n+1)*dt
-		RATE_INTEGRATE, // dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)*dt
+		RATE_CALCULATE, // dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)*dt
 		FINITE_ASSIGN,  // X(n+1) := x_new, dX(n+1) = (X(n+1)-X(n))/dt
-		FINITE_DERIVATE // X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt
+		FINITE_CALCULATE // X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt
 	};
 
 	template <typename T>
@@ -86,12 +86,12 @@ namespace numerical_schema {
 		virtual void step() {
 			switch (_type)
 			{
-			case numerical_schema::type_schema::RATE_INTEGRATE:
+			case numerical_schema::type_schema::RATE_CALCULATE:
 				(*this)->rate_equation();
 			case numerical_schema::type_schema::RATE_ASSIGN:
 				(*this)->integrate_value(_dt);
 				break;
-			case numerical_schema::type_schema::FINITE_DERIVATE:
+			case numerical_schema::type_schema::FINITE_CALCULATE:
 				(*this)->finit_equation();
 			case numerical_schema::type_schema::FINITE_ASSIGN:
 				(*this)->calc_rate(_dt);
