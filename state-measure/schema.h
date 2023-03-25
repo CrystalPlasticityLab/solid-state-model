@@ -52,6 +52,7 @@ namespace numerical_schema {
 		};
 	}
 
+
 	class AbstractSchema {
 	public:
 		virtual void init() = 0;
@@ -67,64 +68,38 @@ namespace numerical_schema {
 	};
 
 	template <typename T>
-	class DefaultSchema : public measure::StateMeasure<T>, public AbstractSchema {
-		bool _value_updated = false;
-		bool _rate_updated = false;
+	class DefaultSchema : public std::unique_ptr<measure::StateMeasure<T>>, public AbstractSchema {
 		type_schema _type;
 		T& _dt;
 	public:
-		DefaultSchema(type_schema type, 
-						std::shared_ptr<state::State<T>>& state, 
-						size_t dim, size_t rank, 
-						std::string name, 
-						tens::FILL_TYPE type_fill = tens::FILL_TYPE::ZERO) :
-			_type(type),
-			_dt(state->dt()),
-			measure::StateMeasure<T>(state, dim, rank, name, type_fill) {
-			link(state, std::move(*this));
-		};
-
 		DefaultSchema(type_schema type,
-			measure::StateMeasure<T>&& measure,
-			std::shared_ptr<state::State<T>>& state) :
+			std::unique_ptr<measure::StateMeasure<T>> &&measure,
+			T& dt) :
 			_type(type),
-			_dt(state->dt()),
-			measure::StateMeasure<T>(std::move(measure)) {
-			link(state, std::move(*this));
+			_dt(dt),
+			std::unique_ptr<measure::StateMeasure<T>>(std::move(measure)) {
 		};
 
 		virtual void init() {
-			_value_updated = false;
-			_rate_updated = false;
 		};
 
 		virtual void step() {
 			switch (_type)
 			{
 			case numerical_schema::type_schema::RATE_INTEGRATE:
-				rate_equation();
+				(*this)->rate_equation();
 			case numerical_schema::type_schema::RATE_ASSIGN:
-				_rate_updated ? this->integrate_value(_dt) : throw new error::RateNotUpdated();
+				(*this)->integrate_value(_dt);
 				break;
 			case numerical_schema::type_schema::FINITE_DERIVATE:
-				finit_equation();
+				(*this)->finit_equation();
 			case numerical_schema::type_schema::FINITE_ASSIGN:
-				_value_updated ? this->calc_rate(_dt) : throw new error::RateNotUpdated();
+				(*this)->calc_rate(_dt);
 				break;
 			default:
 				throw new error::UndefinedNumericalSchema();
 				break;
 			}
-		};
-
-		virtual void rate_equation() override {
-			// evolution equation in rate form
-			// rate must be updated by calling update_rate
-		}
-
-		virtual void finit_equation() override {
-			// evolution equation in finite form
-			// value must be updated by calling update_value
 		};
 
 		virtual void finalize() {

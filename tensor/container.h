@@ -97,17 +97,20 @@ namespace tens {
 			static_cast<std::unique_ptr<T[]>&>(*this) = std::move(c);
 		}
 
-		void _alloc() {
+		void _alloc(T* memory = nullptr) {
 			if (*this) {
 				throw new NoImplemetationYet();
 			}
-			static_cast<std::unique_ptr<T[]>&>(*this) = std::unique_ptr<T[]>(new T[_size]);
+			if (memory) {
+				static_cast<std::unique_ptr<T[]>&>(*this) = std::unique_ptr<T[]>(memory);
+			} else{
+				static_cast<std::unique_ptr<T[]>&>(*this) = std::unique_ptr<T[]>(new T[_size]);
+			}
 		}
 
 		void _free() {
 			this->reset();
 		}
-
 	public:
 		size_t dim()  const { return _dim; };
 		size_t size() const { return _size; };
@@ -195,7 +198,7 @@ namespace tens {
 
 		inline container& operator= (container&& rhs) noexcept {
 #ifdef _DEBUG
-			this->is_consist(rhs);
+			if (*this) this->is_consist(rhs);
 #endif
 			this->_move(rhs);
 			return *this;
@@ -205,7 +208,7 @@ namespace tens {
 #ifdef _DEBUG
 			lhs.is_consist(rhs);
 #endif
-			container<T> nhs(lhs.dim(), rhs.rank());
+			container<T> nhs(lhs.dim(), lhs.rank());
 			for (size_t i = 0; i < lhs.size(); i++)
 				nhs[i] = lhs[i] + rhs[i];
 			return nhs;
@@ -215,7 +218,7 @@ namespace tens {
 #ifdef _DEBUG
 			lhs.is_consist(rhs);
 #endif
-			container nhs(lhs.dim(), rhs.rank());
+			container nhs(lhs.dim(), lhs.rank());
 			for (size_t i = 0; i < lhs.size(); i++)
 				nhs[i] = lhs[i] - rhs[i];
 			return nhs;

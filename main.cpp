@@ -23,10 +23,9 @@ int main()
 	const auto gl = GLOBAL_BASIS<double>;
 	//try 
 	{
+		//const auto ptr = tens::container<double>::new_mem(10);
 		run_test();
 		using namespace tens;
-		double arr[90];
-		auto arr_ptr = std::unique_ptr<double>(arr);
 		//const auto yy = container<double>(30, 2, std::move(std::unique_ptr<double>(arr)));
 		const auto xx = container<double>(30, 0);
 		auto scalar = container<double>(1, 1, 0.4534535);
@@ -63,20 +62,17 @@ int main()
 		auto tvres2 = v4 * t1;
 		t1 = t2 * t2;
 		t1 = t2 * 2.0;
-
 		//auto B = state::Measure(R, "R");
 		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);// Tensor<double>(create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM))
 		auto state = state::create(std::move(R));
 
-		auto ma = measure::MeasureAbstract(scalar_array);
-		state::add(measure::strain::DEFORM_GRADIENT, state, numerical_schema::type_schema::FINITE_ASSIGN);
-		state::add(measure::stress::CAUCHY, state, numerical_schema::type_schema::FINITE_ASSIGN);
-		numerical_schema::DefaultSchema(numerical_schema::type_schema::FINITE_ASSIGN, measure::stress::CaushyStress<double>(state), state);
+		state::add<measure::strain::GradDeform, double>(state, numerical_schema::type_schema::RATE_INTEGRATE);
+		state::add<measure::stress::CaushyStress, double>(state, numerical_schema::type_schema::RATE_INTEGRATE);
 
-		std::cout << (*(*state)["F"]);
+		//std::cout << (*(*state)["F"]);
 		state->step();
 		auto state1 = state;
 		std::cout << *state;
-		return 0;
 	}
+	return 0;
 }
