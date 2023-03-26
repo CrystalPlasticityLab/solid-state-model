@@ -86,7 +86,7 @@ namespace measure {
 				tens::container<T>(dim, rank, tens::FILL_TYPE::ZERO)) {
 		};
 
-		StateMeasure(StateMeasure&& measure) : 
+		StateMeasure(StateMeasure&& measure) noexcept : 
 			tens::object<T>(std::move(measure)),
 			AbstractMeasure<tens::container, T>(
 				measure._name,

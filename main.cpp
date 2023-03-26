@@ -23,9 +23,10 @@ int main()
 	const auto gl = GLOBAL_BASIS<double>;
 	//try 
 	{
-		//const auto ptr = tens::container<double>::new_mem(10);
-		run_test();
 		using namespace tens;
+		const auto qwew = container<double>(30, 0);
+		func(qwew, sqrt);
+		run_test();
 		//const auto yy = container<double>(30, 2, std::move(std::unique_ptr<double>(arr)));
 		const auto xx = container<double>(30, 0);
 		auto scalar = container<double>(1, 1, 0.4534535);

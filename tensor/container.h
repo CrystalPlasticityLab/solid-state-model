@@ -8,6 +8,8 @@
 #include <utility>
 #include "error.h"
 #include "math.h"
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 
 extern std::mt19937 gen;       // Standard mersenne_twister_engine seeded with rd()
 extern std::uniform_real_distribution<double> unidistr;
@@ -18,6 +20,7 @@ namespace tens {
 		ZERO,
 		RANDOM,
 		RANDOMUNIT,
+		RANDOMSYMM,
 		INDENT
 	};
 
@@ -136,6 +139,7 @@ namespace tens {
 
 		container(size_t N, size_t R, FILL_TYPE type) : std::unique_ptr<T[]>(), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {
 			_alloc();
+			const auto& ref = *this;
 			switch (type)
 			{
 			case tens::FILL_TYPE::ZERO:
@@ -144,6 +148,12 @@ namespace tens {
 			case tens::FILL_TYPE::RANDOM:
 				fill_rand();
 				break;
+			case tens::FILL_TYPE::RANDOMSYMM:
+				fill_rand();
+				for (size_t i = N; i < (_size-N)/2 + N; i++) {
+					ref[i] = ref[i + N] = (ref[i] + ref[i+N])*0.5;
+				}
+				break;
 			case tens::FILL_TYPE::RANDOMUNIT:
 				fill_rand();
 				*this = get_normalize(*this);
@@ -151,7 +161,7 @@ namespace tens {
 			case tens::FILL_TYPE::INDENT:
 				fill_value(T(0));
 				for (size_t i = 0; i < N; i++){
-					this->get()[i] = T(1);
+					ref[i] = T(1);
 				}
 				break;
 			default:
@@ -190,7 +200,7 @@ namespace tens {
 
 		inline container& operator= (const container& rhs) {
 #ifdef _DEBUG
-			this->is_consist(rhs);
+			if (*this) this->is_consist(rhs);
 #endif
 			this->_copy(rhs);
 			return *this;
@@ -360,7 +370,31 @@ namespace tens {
 			}
 			throw NoImplemetationYet();
 		}
+
+		template<typename T>
+		friend std::pair<container<T>, container<T>> eigen(const tens::container<T>& M);
 	};
+
+
+	template<typename T>
+	std::pair<container<T>, container<T>> eigen(const tens::container<T>& M) {
+		// ------- for DIM == 3 : {00, 11, 22, 12, 02, 01, 21, 20, 10} 
+		if (M._dim != 3 || M._rank != 2) {
+			throw NoImplemetationYet();
+		}
+		Eigen::Matrix3d m;
+		m << M[0], M[5], M[4], M[8], M[1], M[3], M[7], M[6], M[2];
+		auto es = Eigen::EigenSolver<Eigen::Matrix3d>(m, true);
+		const auto& l = es.eigenvalues();
+		const auto& v = es.eigenvectors();
+		tens::container<T> comp(3, 2, FILL_TYPE::ZERO);
+		tens::container<T> vect(3, 2, FILL_TYPE::ZERO);
+		comp[0] = l[0].real(); comp[1] = l[1].real(); comp[2] = l[2].real();
+		vect[0] = v(0).real(); vect[5] = v(1).real(); vect[4] = v(2).real();
+		vect[8] = v(3).real(); vect[1] = v(4).real(); vect[3] = v(5).real();
+		vect[7] = v(6).real(); vect[6] = v(7).real(); vect[2] = v(8).real();
+		return { comp , vect };
+	}
 
 	template<typename T>
 	[[nodiscard]] container<T> operator * (const container<T>& lhs, const container<T>& rhs) {

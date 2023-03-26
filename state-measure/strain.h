@@ -22,7 +22,7 @@ namespace measure {
 
 			std::pair<tens::container<T>, tens::container<T>> polar_decomposition() {
 				const auto& F = this->value();
-				auto V = F * F.transpose(); // TODO: take sqrt !!!
+				auto V = func(F * F.transpose(), sqrt); // TODO: check sqrt !!!
 				auto R = F * V.inverse();
 
 				return { V, R };

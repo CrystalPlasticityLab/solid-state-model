@@ -105,6 +105,10 @@ namespace tens {
 			_basis = pbasis;
 		}
 
+		object(const container<T>& comp, const container<T>& basis) {
+			_comp = std::make_unique<container<T>>(comp);
+			_basis = std::make_shared<container<T>>(basis);
+		}
 	protected:
 
 		void move_basis(const Basis<T>& pbasis) {
@@ -286,7 +290,23 @@ namespace tens {
 		friend static object<T> inverse(const object<T>& m) {
 			return object<T>(m.get_comp_ref().inverse(), m.get_basis_ref());
 		}
+
+		template<typename T>
+		friend object<T> eigen_object(const tens::container<T>& M);
+
+		template<typename T>
+		friend container<T> func(const tens::container<T>& M, T(&f)(T));
 	};
+
+	template<typename T>
+	container<T> func(const tens::container<T>& M, T(&f)(T)) {
+		auto p = eigen(M);
+		for (size_t i = 0; i < M.size(); i++)
+			p.first[i] = f(p.first[i]);
+		auto obj = object<T>(p.first, p.second);
+		obj.change_basis(GLOBAL_BASIS<T>);
+		return obj.comp();
+	}
 
 	template<typename T>
 	bool check_ort(const container<T>& m) {
@@ -399,6 +419,12 @@ namespace tens {
 		res[2][0] = arr[7];
 		res[1][0] = arr[8];
 		return res;
+	}
+
+	template<typename T>
+	object<T> eigen_object(const tens::container<T>& M) {
+		auto res = eigen(M);
+		return object<T>(res.first, res.second);
 	}
 
 	template<typename T>
