@@ -20,10 +20,20 @@ namespace state {
 	class State : public std::unordered_map<const std::string, std::unique_ptr<DefaultSchema<T>>, StringHasher>, public AbstractSchema {
 		Basis<T> _basis;
 		T _dt;
+		T _t;
 
-		State(Basis<T>&& basis) {
-			_dt = 0.123456;
+		State(Basis<T>&& basis) noexcept {
+			_dt = T();
 			_basis = std::move(basis);
+		}
+
+		template<template<class> class P, class T>
+		void link(P<T>&& obj) {
+			const auto& name = obj->name();
+			if (this->find(name) != this->end()) {
+				throw ErrorAccess::Exists();
+			};
+			this->insert({ name, std::make_unique<P<T>>(std::forward<P<T>>(obj)) });
 		}
 
 		State& operator = (const State&) = delete;
@@ -34,59 +44,64 @@ namespace state {
 		const Basis<T>& basis() {
 			return _basis;
 		}
-		T& dt() { return _dt; };
+		T dt() { return _dt; };
+		T t() { return _t; };
 		void set_time_integration_step(T dt) { _dt = dt; };
 		template<typename T>
 		friend std::ostream& operator<< (std::ostream& o, const State<T>& b);
 
 		template<typename T>
-		friend [[nodiscard]] std::shared_ptr<State<T>> create(Basis<T>&& basis);
+		friend [[nodiscard]] std::shared_ptr<State<T>> create(Basis<T>&& basis) noexcept;
 
-		template<typename T>
-		friend void link(const std::shared_ptr<State<T>>& state, DefaultSchema<T>&& obj);
+		template<template<class> class Q, class T>
+		friend void add(std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema);
+
+		template<template<class> class Q, class T, size_t N>
+		friend void add(std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema);
 
 		virtual void init() override {
+		};
+
+		virtual void step() override {
 			for (auto& obj : *this) {
 				obj.second->init();
 			}
-		};
-		virtual void step() override {
 			for (auto& obj : *this) {
 				obj.second->step();
 			}
-		};
-		virtual void finalize() override {
 			for (auto& obj : *this) {
 				obj.second->finalize();
 			}
 		};
 
-		template<typename T>
-		static void add(std::string measure_name, std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema);
+		virtual void finalize() override {
+			_t += _dt;
+		};
 	};
 
-	template<typename T>
-	static void add(std::string measure_name, std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema) {
-		if (measure_name == strain::DEFORM_GRADIENT) {
-			numerical_schema::DefaultSchema<T>(type_schema, strain::GradDeform<T>(state), state);
-		}
-		else if (measure_name == stress::CAUCHY) {
-			numerical_schema::DefaultSchema<T>(type_schema, stress::CaushyStress<T>(state), state);
-		}
+	template<template<class> class Q, class T>
+	void add(std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema) {
+		state->link(
+			numerical_schema::DefaultSchema<T>(
+				type_schema, 
+				std::make_unique<Q<T>>(Q<T>(state)), 
+				state->_dt)
+		);
+	}
+
+	template<template<class> class Q, class T, size_t N>
+	void add(std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema) {
+		state->link(
+			numerical_schema::DefaultSchema<T>(
+				type_schema,
+				std::make_unique<Q<T>>(Q<T>(state, N)),
+				state->_dt)
+		);
 	}
 
 	template<typename T>
-	[[nodiscard]] std::shared_ptr<State<T>> create(Basis<T>&& basis) {
+	[[nodiscard]] std::shared_ptr<State<T>> create(Basis<T>&& basis) noexcept {
 		return std::shared_ptr<State<T>>(new State<T>(std::move(basis)));
-	}
-
-	template<typename T>
-	void link(const std::shared_ptr<State<T>>& state, DefaultSchema<T>&& obj) {
-		const auto& name = obj.name();
-		if (state->find(name) != state->end()) {
-			throw ErrorAccess::Exists();
-		};
-		state->insert({ name, std::make_unique<DefaultSchema<T>>(std::move(obj))});
 	}
 
 	template<typename T>
@@ -94,9 +109,9 @@ namespace state {
 		out << "Basis    : " << *b._basis << std::endl;
 		out << "Measures : \n";
 		for (const auto& obj : b){
-			const auto& value = obj.second->get_value();
-			const auto& rate = obj.second->get_rate();
-			out << " - " << obj.first << " (dim=" << value.dim() << ", rank=" << value.rank() << "), value = " << value << ", rate = " << rate << std::endl;
+			const auto& value = (*obj.second)->value();
+			const auto& rate = (*obj.second)->rate();
+			out << " - " << obj.first << ": value = " << value << ", rate = " << rate << std::endl;
 		}
 		return out;
 	};

@@ -14,18 +14,33 @@ namespace measure {
 			GradDeform(std::shared_ptr<State<T>>& state) : StateMeasure<T>(state, 3, 2, DEFORM_GRADIENT, tens::FILL_TYPE::INDENT) {};
 
 			virtual void integrate_value(T dt) override {
-				auto L = this->rate();
-				L *= -dt; // -L*dt
-				L += IDENT_MATRIX<T>; // I - L*dt
-				StateMeasure<T>::update_value(L.inverse() * this->value_prev());// (I - L * dt)^-1 * F
+				auto& df = this->value_temp;
+				const auto& f_old = this->value();
+
+				df = this->rate();
+				// I - L*dt
+				(df *= -dt) += IDENT_MATRIX<T>; 
+				// (I - L * dt)^-1 * F
+				inverse(df);
+				df *= f_old;
+				StateMeasure<T>::update_value();
 			}
 
 			std::pair<tens::container<T>, tens::container<T>> polar_decomposition() {
 				const auto& F = this->value();
-				auto V = F * F.transpose(); // TODO: take sqrt !!!
+				auto V = func(F * F.transpose(), sqrt); // TODO: check sqrt !!!
 				auto R = F * V.inverse();
 
 				return { V, R };
+			};
+
+			virtual void rate_equation() override {
+				auto& L = this->rate_temp;
+				L.fill_value(tens::FILL_TYPE::INDENT);
+				StateMeasure<T>::update_rate();
+			}
+
+			virtual void finit_equation() override {
 			};
 		};
 	};

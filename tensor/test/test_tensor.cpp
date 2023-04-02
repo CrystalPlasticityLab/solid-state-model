@@ -4,6 +4,7 @@ void test_tensor(){
     using namespace tens;
 
     std::cout << " =================== Start testing Tensor ===================" << std::endl;
+    const auto gl = GLOBAL_BASIS<double>;
     int all_tests = 0;
     int pass_tests = 0;
     const auto m_I = Matrix<double, 3>(FILL_TYPE::INDENT);
@@ -128,6 +129,13 @@ void test_tensor(){
         auto vt1 = v11 * t11;
         auto vt2 = t11 * v11;
         pass_tests += expect(!(vt1 == vt2), "check scal v*t != t*v");
+        all_tests++;
+    }
+    {
+        const auto sm = container<double>(3, 2, FILL_TYPE::RANDOMSYMM);
+        const auto ref_obj = object<double>(sm, gl);
+        const auto eig_obj = eigen_object(sm);
+        pass_tests += expect((ref_obj == eig_obj), "eigen test");
         all_tests++;
     }
    //{

@@ -6,6 +6,7 @@
 #include "./state-measure/schema.h"
 #include "./state-measure/state.h"
 #include "./state-measure/measure.h"
+#include "./state-measure/scalar.h"
 #include "./state-measure/strain.h"
 #include "./state-measure/stress.h"
 
@@ -23,10 +24,18 @@ int main()
 	const auto gl = GLOBAL_BASIS<double>;
 	//try 
 	{
-		run_test();
+		std::unordered_map<int, void*> map;
+		map.insert({ 1, new int[10] });
+		map.insert({ 2, new float[10] });
+		map.insert({ 3, new double[10] });
+		map.insert({ 4, new std::string[10] });
+		map.insert({ 5, new std::array<double, 10>() });
+		const auto type = typeid(std::array<double, 10>).name();
+		auto xmap = static_cast<std::array<double, 10>*>(map[5]);
 		using namespace tens;
-		double arr[90];
-		auto arr_ptr = std::unique_ptr<double>(arr);
+		const auto qwew = container<double>(30, 0);
+		//func(qwew, sqrt);
+		run_test();
 		//const auto yy = container<double>(30, 2, std::move(std::unique_ptr<double>(arr)));
 		const auto xx = container<double>(30, 0);
 		auto scalar = container<double>(1, 1, 0.4534535);
@@ -64,19 +73,18 @@ int main()
 		t1 = t2 * t2;
 		t1 = t2 * 2.0;
 
-		//auto B = state::Measure(R, "R");
-		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);// Tensor<double>(create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM))
+		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
 		auto state = state::create(std::move(R));
+		state->set_time_integration_step(1e-6);
+		state::add<measure::scalar::Scalar, double, 10>(state, numerical_schema::type_schema::RATE_CALCULATE);
+		state::add<measure::strain::GradDeform, double>(state, numerical_schema::type_schema::RATE_CALCULATE);
+		state::add<measure::stress::CaushyStress, double>(state, numerical_schema::type_schema::RATE_CALCULATE);
 
-		auto ma = measure::MeasureAbstract(scalar_array);
-		state::add(measure::strain::DEFORM_GRADIENT, state, numerical_schema::type_schema::FINITE_ASSIGN);
-		state::add(measure::stress::CAUCHY, state, numerical_schema::type_schema::FINITE_ASSIGN);
-		numerical_schema::DefaultSchema(numerical_schema::type_schema::FINITE_ASSIGN, measure::stress::CaushyStress<double>(state), state);
-
-		std::cout << (*(*state)["F"]);
-		state->step();
-		auto state1 = state;
 		std::cout << *state;
-		return 0;
+		for (size_t i = 0; i < 100000; i++){
+			state->step();
+		}
+		std::cout << *state;
 	}
+	return 0;
 }

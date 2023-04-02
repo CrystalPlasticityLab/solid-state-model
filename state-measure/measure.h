@@ -1,5 +1,4 @@
 #pragma once
-#include "../tensor-matrix/tensor/object.h"
 
 namespace state {
 	template<typename T>
@@ -18,88 +17,119 @@ namespace measure {
 		};
 	}
 
-	template<typename Base>
-	class MeasureAbstract : public Base {
+	template<template<class> class Q, class T>
+	class AbstractMeasure {
+		std::string _name;
+		Q<T>& _value;
+		Q<T> _rate;
+		Q<T> _value_prev;
+		Q<T> _rate_prev;
 	protected:
-		Base& _value;
-		Base _rate;
-		
-		template <typename P>
-		void update_rate(P&& rate) {
-			_rate = std::forward<P>(rate);
+		// method uses value_temp as a new one (swap pointers, more efficient)
+		void update_value() {
+			// _value = _value_temp, _value_temp = _value
+			std::swap(_value, value_temp);
+			// _value_temp = _value_prev, _value_prev = _value_temp
+			std::swap(_value_prev, value_temp);
+			// _value = _value_temp, _value_prev = _value, _value_temp = _value_prev
 		};
 
-		template <typename P>
-		void update_value(P&& value) {
-			_value = std::forward<P>(value);
+		// method uses rate_temp as a new one (swap pointers, more efficient)
+		void update_rate() {
+			std::swap(_rate, rate_temp);
+			std::swap(_rate_prev, rate_temp);
 		};
 
+		// use reference rate_temp / value_temp for temporary calculation to prevent a new allocation
+		// update_rate()/update_value() use rate_temp / value_temp value as a new one (for more info see declaration)
+		// WARNING: rate_temp / value_temp variables updating and calling update_rate()/update_value() must be in one scope
+		Q<T> rate_temp;
+		Q<T> value_temp;
 	public:
-		MeasureAbstract(Base& value) : Base(value),
-			_value(static_cast<Base&>(*this)),
-			_rate(value) {
-			_rate = 0;
+		AbstractMeasure(std::string name, Q<T>& value, Q<T>&& rate) :
+			_name(name),
+			_value(value),
+			_rate(std::move(rate)),
+			_value_prev(_value),
+			_rate_prev(_rate),
+			value_temp(_value),
+			rate_temp(_rate) {};
+
+		// const refs to private fields
+		const Q<T>& rate() { return _rate; };
+		const Q<T>& value() { return _value; };
+		const Q<T>& rate_prev() { return _rate_prev; };
+		const Q<T>& value_prev() { return _value_prev; };
+		const std::string& name() const { return _name; };
+
+		// ============================================================================= //
+		//		PERFORMANCE NOTE: to prevent unnecessery allocations use				 //
+		//		[+=, -=, /= , *=] methods instead of [+, -, /, *] when possible			 //
+		// ============================================================================= //
+
+		// evolution equation in rate form
+		// rate must be updated by calling update_rate
+		// use reference this->rate_temp() for temporary calculation to prevent a new allocation
+		// update_rate() uses this->rate_temp value as a new one (for more info see declaration)
+		virtual void rate_equation() = 0;
+
+		// evolution equation in finite form
+		// value must be updated by calling update_value
+		// use reference this->value_temp() for temporary calculation to prevent a new allocation
+		// update_value() uses this->value_temp value as a new one (for more info see declaration)
+		virtual void finit_equation() = 0;
+
+		// the first order schema to calculate rate, may be overriden
+		// use reference this->rate_temp() for temporary calculation to prevent a new allocation
+		// update_rate() uses this->rate_temp value as a new one (for more info see declaration)
+		virtual void calc_rate(T dt) {
+			rate_temp = _value;
+			rate_temp -= _value_prev;
+			rate_temp /= dt;
+			update_rate();
 		};
+
+		// the first order (Euler) schema to integrate value, may be overriden
+		// use this->value_temp() for temporary calculation to prevent a new allocation
+		// update_value() uses this->value_temp value as a new one (for more info see declaration)
+		virtual void integrate_value(T dt) {
+			value_temp = _rate;
+			value_temp *= dt;
+			value_temp += _value;
+			update_value();
+		};
+
+		template<template<class> class Q, class T>
+		friend std::ostream& operator<<(std::ostream& out, const AbstractMeasure<Q, T>& m);
+	};
+
+	template<template<class> class Q, class T>
+	std::ostream& operator<<(std::ostream& out, const AbstractMeasure<Q, T>& m) {
+		out << m._name << ": value = " << m._value << ", rate = " << m._rate;
+		return out;
 	};
 
 	template<typename T>
-	class StateMeasure : public tens::object<T> {
-		std::string _name;
-		tens::container<T>& _value;
-		tens::container<T> _rate;
-		tens::container<T> _value_prev;
-		tens::container<T> _rate_prev;
+	class StateMeasure : public tens::object<T>, public AbstractMeasure<tens::container, T> {
 		std::weak_ptr<State<T>> _state;
-	protected:
-		template <typename P>
-		void update_rate(P&& rate) {
-			std::swap(_rate, _rate_prev);
-			_rate = std::forward<P>(rate);
-		};
-
-		template <typename P>
-		void update_value(P&& value) {
-			std::swap(_value, _value_prev);
-			_value = std::forward<P>(value);
-		};
-
-		virtual void calc_rate(T dt) {
-			update_rate((_value - _value_prev) / dt);
-		};
-
-		virtual void integrate_value(T dt) {
-			update_value(_value_prev + _rate * dt);
-		};
-
-		virtual void rate_equation() {};
-		virtual void finit_equation() {};
-
-		tens::container<T>& rate() { return _rate; };
-		tens::container<T>& value() { return _value; };
-		tens::container<T>& rate_prev() { return _rate_prev; };
-		tens::container<T>& value_prev() { return _value_prev; };
 	public:
-		const tens::container<T>& get_rate() const { return _rate; };
-		const tens::container<T>& get_value() const { return _value; };
-		std::string name() const { return _name; };
-		// -- TODO: add move semantic 
 		StateMeasure(std::shared_ptr<State<T>>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type = tens::FILL_TYPE::ZERO) :
 			tens::object<T>(dim, rank, type, state->basis()),
 			_state(state),
-			_name(name),
-			_value(this->comp()), // link ref
-			_rate(dim, rank, tens::FILL_TYPE::ZERO),
-			_value_prev(_value),
-			_rate_prev(_rate) {
+			AbstractMeasure<tens::container, T>(
+				name,
+				this->comp(), // link ref
+				tens::container<T>(dim, rank, tens::FILL_TYPE::ZERO)) {
 		};
 
-		StateMeasure(StateMeasure&& measure) : 
+		// TODO: looks like a bit weird -> fix
+		// becasue StateMeasure is AbstractMeasure
+		StateMeasure(StateMeasure&& measure) noexcept : 
 			tens::object<T>(std::move(measure)),
-			_value(this->comp()),
-			_name(measure._name),
-			_rate(std::move(measure._rate)),
-			_value_prev(std::move(measure._value_prev)),
-			_rate_prev(std::move(measure._rate_prev)),
+			AbstractMeasure<tens::container, T>(
+				measure.name(),
+				this->comp(),
+				tens::container<T>(std::move(measure.rate()))),
 			_state(measure._state){
 		}
 

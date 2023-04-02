@@ -52,6 +52,7 @@ namespace numerical_schema {
 		};
 	}
 
+
 	class AbstractSchema {
 	public:
 		virtual void init() = 0;
@@ -61,55 +62,38 @@ namespace numerical_schema {
 
 	enum class type_schema {
 		RATE_ASSIGN,    // dX(n+1) := dx_new, X(n+1) = X(n) + dX(n+1)*dt
-		RATE_INTEGRATE, // dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)*dt
+		RATE_CALCULATE, // dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)*dt
 		FINITE_ASSIGN,  // X(n+1) := x_new, dX(n+1) = (X(n+1)-X(n))/dt
-		FINITE_DERIVATE // X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt
+		FINITE_CALCULATE // X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt
 	};
 
 	template <typename T>
-	class DefaultSchema : public measure::StateMeasure<T>, public AbstractSchema {
-		bool _value_updated = false;
-		bool _rate_updated = false;
+	class DefaultSchema : public std::unique_ptr<measure::StateMeasure<T>>, public AbstractSchema {
 		type_schema _type;
 		T& _dt;
 	public:
-		DefaultSchema(type_schema type, 
-						std::shared_ptr<state::State<T>>& state, 
-						size_t dim, size_t rank, 
-						std::string name, 
-						tens::FILL_TYPE type_fill = tens::FILL_TYPE::ZERO) :
-			_type(type),
-			_dt(state->dt()),
-			measure::StateMeasure<T>(state, dim, rank, name, type_fill) {
-			link(state, std::move(*this));
-		};
-
 		DefaultSchema(type_schema type,
-			measure::StateMeasure<T>&& measure,
-			std::shared_ptr<state::State<T>>& state) :
+			std::unique_ptr<measure::StateMeasure<T>> &&measure,
+			T& dt) :
 			_type(type),
-			_dt(state->dt()),
-			measure::StateMeasure<T>(std::move(measure)) {
-			link(state, std::move(*this));
+			_dt(dt),
+			std::unique_ptr<measure::StateMeasure<T>>(std::move(measure)) {
 		};
 
-		virtual void init() {
-			_value_updated = false;
-			_rate_updated = false;
-		};
+		virtual void init() {};
 
 		virtual void step() {
 			switch (_type)
 			{
-			case numerical_schema::type_schema::RATE_INTEGRATE:
-				rate_equation();
+			case numerical_schema::type_schema::RATE_CALCULATE:
+				(*this)->rate_equation();
 			case numerical_schema::type_schema::RATE_ASSIGN:
-				_rate_updated ? this->integrate_value(_dt) : throw new error::RateNotUpdated();
+				(*this)->integrate_value(_dt);
 				break;
-			case numerical_schema::type_schema::FINITE_DERIVATE:
-				finit_equation();
+			case numerical_schema::type_schema::FINITE_CALCULATE:
+				(*this)->finit_equation();
 			case numerical_schema::type_schema::FINITE_ASSIGN:
-				_value_updated ? this->calc_rate(_dt) : throw new error::RateNotUpdated();
+				(*this)->calc_rate(_dt);
 				break;
 			default:
 				throw new error::UndefinedNumericalSchema();
@@ -117,17 +101,6 @@ namespace numerical_schema {
 			}
 		};
 
-		virtual void rate_equation() override {
-			// evolution equation in rate form
-			// rate must be updated by calling update_rate
-		}
-
-		virtual void finit_equation() override {
-			// evolution equation in finite form
-			// value must be updated by calling update_value
-		};
-
-		virtual void finalize() {
-		};
+		virtual void finalize() override {};
 	};
 };

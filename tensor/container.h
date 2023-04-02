@@ -1,27 +1,35 @@
 #pragma once
-#include <memory>
-#include <array>
-#include <random>
-#include <iostream>
 #include <algorithm>
+#include <array>
 #include <cassert>
+#include <concepts>
+#include <iostream>
+#include <memory>
+#include <random>
 #include <utility>
 #include "error.h"
 #include "math.h"
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 
 extern std::mt19937 gen;       // Standard mersenne_twister_engine seeded with rd()
 extern std::uniform_real_distribution<double> unidistr;
 
 namespace tens {
 
+	template<typename T>
+	concept FloatPoint = std::floating_point<T>;
+
 	enum class FILL_TYPE {
 		ZERO,
 		RANDOM,
 		RANDOMUNIT,
+		RANDOMSYMM,
 		INDENT
 	};
 
 	template<typename T>
+	requires FloatPoint<T>
 	class container;
 	template<typename T> std::ostream& operator<< (std::ostream& o, const container<T>& cont);
 
@@ -64,6 +72,7 @@ namespace tens {
 	container<double> generate_indent_ort();
 
 	template<typename T>
+	requires FloatPoint<T>
 	class container : public std::unique_ptr<T[]>
 	{
 	private:
@@ -97,17 +106,20 @@ namespace tens {
 			static_cast<std::unique_ptr<T[]>&>(*this) = std::move(c);
 		}
 
-		void _alloc() {
+		void _alloc(T* memory = nullptr) {
 			if (*this) {
 				throw new NoImplemetationYet();
 			}
-			static_cast<std::unique_ptr<T[]>&>(*this) = std::unique_ptr<T[]>(new T[_size]);
+			if (memory) {
+				static_cast<std::unique_ptr<T[]>&>(*this) = std::unique_ptr<T[]>(memory);
+			} else{
+				static_cast<std::unique_ptr<T[]>&>(*this) = std::unique_ptr<T[]>(new T[_size]);
+			}
 		}
 
 		void _free() {
 			this->reset();
 		}
-
 	public:
 		size_t dim()  const { return _dim; };
 		size_t size() const { return _size; };
@@ -120,7 +132,7 @@ namespace tens {
 		};
 
 		void fill_rand() {
-			for (size_t i = 0; i < _size; i++) {
+			for (size_t i = 0; i < _size; ++i) {
 				this->get()[i] = static_cast<T>(unidistr(gen));
 			}
 		};
@@ -129,10 +141,8 @@ namespace tens {
 			std::fill(this->get(), this->get() + _size, val);
 		};
 
-		container(size_t N, size_t R, std::unique_ptr<T[]>&& pointer) : std::unique_ptr<T[]>(std::move(pointer)), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {};
-
-		container(size_t N, size_t R, FILL_TYPE type) : std::unique_ptr<T[]>(), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {
-			_alloc();
+		void fill_value(tens::FILL_TYPE type) {
+			const auto& ref = *this;
 			switch (type)
 			{
 			case tens::FILL_TYPE::ZERO:
@@ -141,19 +151,32 @@ namespace tens {
 			case tens::FILL_TYPE::RANDOM:
 				fill_rand();
 				break;
+			case tens::FILL_TYPE::RANDOMSYMM:
+				fill_rand();
+				for (size_t i = _dim; i < (_size - _dim) / 2 + _dim; ++i) {
+					ref[i] = ref[i + _dim] = (ref[i] + ref[i + _dim]) * 0.5;
+				}
+				break;
 			case tens::FILL_TYPE::RANDOMUNIT:
 				fill_rand();
 				*this = get_normalize(*this);
 				break;
 			case tens::FILL_TYPE::INDENT:
 				fill_value(T(0));
-				for (size_t i = 0; i < N; i++){
-					this->get()[i] = T(1);
+				for (size_t i = 0; i < _dim; ++i) {
+					ref[i] = T(1);
 				}
 				break;
 			default:
 				break;
 			}
+		};
+
+		container(size_t N, size_t R, std::unique_ptr<T[]>&& pointer) : std::unique_ptr<T[]>(std::move(pointer)), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {};
+
+		container(size_t N, size_t R, FILL_TYPE type) : std::unique_ptr<T[]>(), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {
+			_alloc();
+			fill_value(type);
 		};
 		
 		container(size_t N, size_t R) : std::unique_ptr<T[]>(), _dim(N), _size( R != 0 ? (size_t)pow(N, R) : N), _rank(R) {
@@ -187,7 +210,7 @@ namespace tens {
 
 		inline container& operator= (const container& rhs) {
 #ifdef _DEBUG
-			this->is_consist(rhs);
+			if (*this) this->is_consist(rhs);
 #endif
 			this->_copy(rhs);
 			return *this;
@@ -195,7 +218,7 @@ namespace tens {
 
 		inline container& operator= (container&& rhs) noexcept {
 #ifdef _DEBUG
-			this->is_consist(rhs);
+			if (*this) this->is_consist(rhs);
 #endif
 			this->_move(rhs);
 			return *this;
@@ -205,8 +228,8 @@ namespace tens {
 #ifdef _DEBUG
 			lhs.is_consist(rhs);
 #endif
-			container<T> nhs(lhs.dim(), rhs.rank());
-			for (size_t i = 0; i < lhs.size(); i++)
+			container<T> nhs(lhs.dim(), lhs.rank());
+			for (size_t i = 0; i < lhs.size(); ++i)
 				nhs[i] = lhs[i] + rhs[i];
 			return nhs;
 		}
@@ -215,15 +238,15 @@ namespace tens {
 #ifdef _DEBUG
 			lhs.is_consist(rhs);
 #endif
-			container nhs(lhs.dim(), rhs.rank());
-			for (size_t i = 0; i < lhs.size(); i++)
+			container nhs(lhs.dim(), lhs.rank());
+			for (size_t i = 0; i < lhs.size(); ++i)
 				nhs[i] = lhs[i] - rhs[i];
 			return nhs;
 		}
 
 		[[nodiscard]] inline friend container<T> operator * (const container<T>& lhs, const T& mul) {
 			container nhs(lhs);
-			for (size_t i = 0; i < lhs.size(); i++)
+			for (size_t i = 0; i < lhs.size(); ++i)
 				nhs[i] *= mul;
 			return nhs;
 		}
@@ -236,7 +259,7 @@ namespace tens {
 				throw new ErrorMath::DivisionByZero();
 			}
 #endif
-			for (size_t i = 0; i < lhs.size(); i++)
+			for (size_t i = 0; i < lhs.size(); ++i)
 				nhs[i] *= mul;
 			return nhs;
 		}
@@ -250,7 +273,7 @@ namespace tens {
 			this->is_consist(rhs);
 #endif
 			container& lhs = *this;
-			for (size_t i = 0; i < _size; i++)
+			for (size_t i = 0; i < _size; ++i)
 				lhs[i] += rhs[i];
 			return lhs;
 		}
@@ -260,16 +283,22 @@ namespace tens {
 			this->is_consist(rhs);
 #endif
 			container& lhs = *this;
-			for (size_t i = 0; i < _size; i++)
+			for (size_t i = 0; i < _size; ++i)
 				lhs[i] -= rhs[i];
 			return lhs;
 		}
 
 		container& operator *= (const T& mul) {
 			container& lhs = *this;
-			for (size_t i = 0; i < _size; i++)
+			for (size_t i = 0; i < _size; ++i)
 				lhs[i] *= mul;
 			return lhs;
+		}
+
+		container& operator *= (const container<T>& rhs) {
+			container& lhs = *this;
+			*this = lhs * rhs;
+			return *this;
 		}
 
 		container<T>& operator /= (const T& div) {
@@ -280,7 +309,7 @@ namespace tens {
 #endif
 			const T mul = T(1) / div;
 			container& lhs = *this;
-			for (size_t i = 0; i < _size; i++)
+			for (size_t i = 0; i < _size; ++i)
 				lhs[i] *= mul;
 			return lhs;
 		}
@@ -330,6 +359,19 @@ namespace tens {
 			throw NoImplemetationYet();
 		}
 
+		friend void inverse(container<T>& m) {
+			if (m._dim == 3) {
+				container<T> inv_matr(3, 2);
+				math::dim3::inv_mat(m.get(), inv_matr.get());
+				m = inv_matr;
+				return;
+			}
+			else {
+				// for any dim matrix
+			}
+			throw NoImplemetationYet();
+		}
+
 		T get_norm() const {
 			T norm = T(0);
 			const auto& arr = *this;
@@ -357,7 +399,31 @@ namespace tens {
 			}
 			throw NoImplemetationYet();
 		}
+
+		template<typename T>
+		friend std::pair<container<T>, container<T>> eigen(const tens::container<T>& M);
 	};
+
+
+	template<typename T>
+	std::pair<container<T>, container<T>> eigen(const tens::container<T>& M) {
+		// ------- for DIM == 3 : {00, 11, 22, 12, 02, 01, 21, 20, 10} 
+		if (M._dim != 3 || M._rank != 2) {
+			throw NoImplemetationYet();
+		}
+		Eigen::Matrix3d m;
+		m << M[0], M[5], M[4], M[8], M[1], M[3], M[7], M[6], M[2];
+		auto es = Eigen::EigenSolver<Eigen::Matrix3d>(m, true);
+		const auto& l = es.eigenvalues();
+		const auto& v = es.eigenvectors();
+		tens::container<T> comp(3, 2, FILL_TYPE::ZERO);
+		tens::container<T> vect(3, 2, FILL_TYPE::ZERO);
+		comp[0] = l[0].real(); comp[1] = l[1].real(); comp[2] = l[2].real();
+		vect[0] = v(0).real(); vect[5] = v(1).real(); vect[4] = v(2).real();
+		vect[8] = v(3).real(); vect[1] = v(4).real(); vect[3] = v(5).real();
+		vect[7] = v(6).real(); vect[6] = v(7).real(); vect[2] = v(8).real();
+		return { comp , vect };
+	}
 
 	template<typename T>
 	[[nodiscard]] container<T> operator * (const container<T>& lhs, const container<T>& rhs) {
@@ -387,7 +453,7 @@ namespace tens {
 			return nhs;
 		}
 		throw NoImplemetationYet();
-	}
+	}	
 
 	template<typename T>
 	std::ostream& operator<<(std::ostream& out, const container<T>& cont) {
