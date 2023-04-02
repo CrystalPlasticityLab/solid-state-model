@@ -1,10 +1,11 @@
 #pragma once
-#include <memory>
-#include <array>
-#include <random>
-#include <iostream>
 #include <algorithm>
+#include <array>
 #include <cassert>
+#include <concepts>
+#include <iostream>
+#include <memory>
+#include <random>
 #include <utility>
 #include "error.h"
 #include "math.h"
@@ -16,6 +17,9 @@ extern std::uniform_real_distribution<double> unidistr;
 
 namespace tens {
 
+	template<typename T>
+	concept FloatPoint = std::floating_point<T>;
+
 	enum class FILL_TYPE {
 		ZERO,
 		RANDOM,
@@ -25,6 +29,7 @@ namespace tens {
 	};
 
 	template<typename T>
+	requires FloatPoint<T>
 	class container;
 	template<typename T> std::ostream& operator<< (std::ostream& o, const container<T>& cont);
 
@@ -67,6 +72,7 @@ namespace tens {
 	container<double> generate_indent_ort();
 
 	template<typename T>
+	requires FloatPoint<T>
 	class container : public std::unique_ptr<T[]>
 	{
 	private:
