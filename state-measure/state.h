@@ -20,9 +20,10 @@ namespace state {
 	class State : public std::unordered_map<const std::string, std::unique_ptr<DefaultSchema<T>>, StringHasher>, public AbstractSchema {
 		Basis<T> _basis;
 		T _dt;
+		T _t;
 
 		State(Basis<T>&& basis) noexcept {
-			_dt = 0.123456;
+			_dt = T();
 			_basis = std::move(basis);
 		}
 
@@ -44,6 +45,7 @@ namespace state {
 			return _basis;
 		}
 		T dt() { return _dt; };
+		T t() { return _t; };
 		void set_time_integration_step(T dt) { _dt = dt; };
 		template<typename T>
 		friend std::ostream& operator<< (std::ostream& o, const State<T>& b);
@@ -54,20 +56,26 @@ namespace state {
 		template<template<class> class Q, class T>
 		friend void add(std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema);
 
+		template<template<class> class Q, class T, size_t N>
+		friend void add(std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema);
+
 		virtual void init() override {
+		};
+
+		virtual void step() override {
 			for (auto& obj : *this) {
 				obj.second->init();
 			}
-		};
-		virtual void step() override {
 			for (auto& obj : *this) {
 				obj.second->step();
 			}
-		};
-		virtual void finalize() override {
 			for (auto& obj : *this) {
 				obj.second->finalize();
 			}
+		};
+
+		virtual void finalize() override {
+			_t += _dt;
 		};
 	};
 
@@ -77,6 +85,16 @@ namespace state {
 			numerical_schema::DefaultSchema<T>(
 				type_schema, 
 				std::make_unique<Q<T>>(Q<T>(state)), 
+				state->_dt)
+		);
+	}
+
+	template<template<class> class Q, class T, size_t N>
+	void add(std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema) {
+		state->link(
+			numerical_schema::DefaultSchema<T>(
+				type_schema,
+				std::make_unique<Q<T>>(Q<T>(state, N)),
 				state->_dt)
 		);
 	}
@@ -91,8 +109,8 @@ namespace state {
 		out << "Basis    : " << *b._basis << std::endl;
 		out << "Measures : \n";
 		for (const auto& obj : b){
-			const auto& value = (*obj.second)->get_value();
-			const auto& rate = (*obj.second)->get_rate();
+			const auto& value = (*obj.second)->value();
+			const auto& rate = (*obj.second)->rate();
 			out << " - " << obj.first << ": value = " << value << ", rate = " << rate << std::endl;
 		}
 		return out;

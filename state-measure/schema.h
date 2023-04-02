@@ -80,8 +80,7 @@ namespace numerical_schema {
 			std::unique_ptr<measure::StateMeasure<T>>(std::move(measure)) {
 		};
 
-		virtual void init() {
-		};
+		virtual void init() {};
 
 		virtual void step() {
 			switch (_type)
@@ -102,7 +101,6 @@ namespace numerical_schema {
 			}
 		};
 
-		virtual void finalize() {
-		};
+		virtual void finalize() override {};
 	};
 };

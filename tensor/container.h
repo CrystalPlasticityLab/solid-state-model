@@ -132,7 +132,7 @@ namespace tens {
 		};
 
 		void fill_rand() {
-			for (size_t i = 0; i < _size; i++) {
+			for (size_t i = 0; i < _size; ++i) {
 				this->get()[i] = static_cast<T>(unidistr(gen));
 			}
 		};
@@ -141,10 +141,7 @@ namespace tens {
 			std::fill(this->get(), this->get() + _size, val);
 		};
 
-		container(size_t N, size_t R, std::unique_ptr<T[]>&& pointer) : std::unique_ptr<T[]>(std::move(pointer)), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {};
-
-		container(size_t N, size_t R, FILL_TYPE type) : std::unique_ptr<T[]>(), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {
-			_alloc();
+		void fill_value(tens::FILL_TYPE type) {
 			const auto& ref = *this;
 			switch (type)
 			{
@@ -156,8 +153,8 @@ namespace tens {
 				break;
 			case tens::FILL_TYPE::RANDOMSYMM:
 				fill_rand();
-				for (size_t i = N; i < (_size-N)/2 + N; i++) {
-					ref[i] = ref[i + N] = (ref[i] + ref[i+N])*0.5;
+				for (size_t i = _dim; i < (_size - _dim) / 2 + _dim; ++i) {
+					ref[i] = ref[i + _dim] = (ref[i] + ref[i + _dim]) * 0.5;
 				}
 				break;
 			case tens::FILL_TYPE::RANDOMUNIT:
@@ -166,13 +163,20 @@ namespace tens {
 				break;
 			case tens::FILL_TYPE::INDENT:
 				fill_value(T(0));
-				for (size_t i = 0; i < N; i++){
+				for (size_t i = 0; i < _dim; ++i) {
 					ref[i] = T(1);
 				}
 				break;
 			default:
 				break;
 			}
+		};
+
+		container(size_t N, size_t R, std::unique_ptr<T[]>&& pointer) : std::unique_ptr<T[]>(std::move(pointer)), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {};
+
+		container(size_t N, size_t R, FILL_TYPE type) : std::unique_ptr<T[]>(), _dim(N), _size(R != 0 ? (size_t)pow(N, R) : N), _rank(R) {
+			_alloc();
+			fill_value(type);
 		};
 		
 		container(size_t N, size_t R) : std::unique_ptr<T[]>(), _dim(N), _size( R != 0 ? (size_t)pow(N, R) : N), _rank(R) {
@@ -225,7 +229,7 @@ namespace tens {
 			lhs.is_consist(rhs);
 #endif
 			container<T> nhs(lhs.dim(), lhs.rank());
-			for (size_t i = 0; i < lhs.size(); i++)
+			for (size_t i = 0; i < lhs.size(); ++i)
 				nhs[i] = lhs[i] + rhs[i];
 			return nhs;
 		}
@@ -235,14 +239,14 @@ namespace tens {
 			lhs.is_consist(rhs);
 #endif
 			container nhs(lhs.dim(), lhs.rank());
-			for (size_t i = 0; i < lhs.size(); i++)
+			for (size_t i = 0; i < lhs.size(); ++i)
 				nhs[i] = lhs[i] - rhs[i];
 			return nhs;
 		}
 
 		[[nodiscard]] inline friend container<T> operator * (const container<T>& lhs, const T& mul) {
 			container nhs(lhs);
-			for (size_t i = 0; i < lhs.size(); i++)
+			for (size_t i = 0; i < lhs.size(); ++i)
 				nhs[i] *= mul;
 			return nhs;
 		}
@@ -255,7 +259,7 @@ namespace tens {
 				throw new ErrorMath::DivisionByZero();
 			}
 #endif
-			for (size_t i = 0; i < lhs.size(); i++)
+			for (size_t i = 0; i < lhs.size(); ++i)
 				nhs[i] *= mul;
 			return nhs;
 		}
@@ -269,7 +273,7 @@ namespace tens {
 			this->is_consist(rhs);
 #endif
 			container& lhs = *this;
-			for (size_t i = 0; i < _size; i++)
+			for (size_t i = 0; i < _size; ++i)
 				lhs[i] += rhs[i];
 			return lhs;
 		}
@@ -279,16 +283,22 @@ namespace tens {
 			this->is_consist(rhs);
 #endif
 			container& lhs = *this;
-			for (size_t i = 0; i < _size; i++)
+			for (size_t i = 0; i < _size; ++i)
 				lhs[i] -= rhs[i];
 			return lhs;
 		}
 
 		container& operator *= (const T& mul) {
 			container& lhs = *this;
-			for (size_t i = 0; i < _size; i++)
+			for (size_t i = 0; i < _size; ++i)
 				lhs[i] *= mul;
 			return lhs;
+		}
+
+		container& operator *= (const container<T>& rhs) {
+			container& lhs = *this;
+			*this = lhs * rhs;
+			return *this;
 		}
 
 		container<T>& operator /= (const T& div) {
@@ -299,7 +309,7 @@ namespace tens {
 #endif
 			const T mul = T(1) / div;
 			container& lhs = *this;
-			for (size_t i = 0; i < _size; i++)
+			for (size_t i = 0; i < _size; ++i)
 				lhs[i] *= mul;
 			return lhs;
 		}
@@ -344,6 +354,19 @@ namespace tens {
 				math::dim3::inv_mat(this->get(), inv_matr.get());
 				return inv_matr;
 			} else {
+				// for any dim matrix
+			}
+			throw NoImplemetationYet();
+		}
+
+		friend void inverse(container<T>& m) {
+			if (m._dim == 3) {
+				container<T> inv_matr(3, 2);
+				math::dim3::inv_mat(m.get(), inv_matr.get());
+				m = inv_matr;
+				return;
+			}
+			else {
 				// for any dim matrix
 			}
 			throw NoImplemetationYet();
@@ -430,7 +453,7 @@ namespace tens {
 			return nhs;
 		}
 		throw NoImplemetationYet();
-	}
+	}	
 
 	template<typename T>
 	std::ostream& operator<<(std::ostream& out, const container<T>& cont) {
