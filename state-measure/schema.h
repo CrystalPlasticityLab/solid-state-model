@@ -54,10 +54,16 @@ namespace numerical_schema {
 
 
 	class AbstractSchema {
-	public:
+	protected:
 		virtual void init() = 0;
-		virtual void step() = 0;
+		virtual void calc() = 0;
 		virtual void finalize() = 0;
+	public:
+		virtual void step() {
+			init();
+			calc();
+			finalize();
+		};
 	};
 
 	enum class type_schema {
@@ -82,7 +88,7 @@ namespace numerical_schema {
 
 		virtual void init() {};
 
-		virtual void step() {
+		virtual void calc() {
 			switch (_type)
 			{
 			case numerical_schema::type_schema::RATE_CALCULATE:
