@@ -60,21 +60,21 @@ namespace state {
 		friend void add(std::shared_ptr<State<T>>& state, numerical_schema::type_schema type_schema);
 
 		virtual void init() override {
-		};
-
-		virtual void step() override {
 			for (auto& obj : *this) {
 				obj.second->init();
 			}
+		};
+
+		virtual void calc() override {
 			for (auto& obj : *this) {
-				obj.second->step();
-			}
-			for (auto& obj : *this) {
-				obj.second->finalize();
+				obj.second->calc();
 			}
 		};
 
 		virtual void finalize() override {
+			for (auto& obj : *this) {
+				obj.second->finalize();
+			}
 			_t += _dt;
 		};
 	};

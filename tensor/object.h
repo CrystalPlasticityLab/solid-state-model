@@ -216,12 +216,12 @@ namespace tens {
 			return container<T>(*this->_comp);
 		}
 
-		operator T() const {
-			if (this->_comp->size() == 1) {
-				return (*this->_comp)[0];
-			}
-			throw ErrorAccess::NoCastScalar();
-		}
+		//operator T() const {
+		//	if (this->_comp->size() == 1) {
+		//		return (*this->_comp)[0];
+		//	}
+		//	throw ErrorAccess::NoCastScalar();
+		//}
 
 		object& operator *= (const T& mul) {
 			*this->_comp *= mul;
@@ -233,14 +233,18 @@ namespace tens {
 			return *this;
 		}
 
-		object& operator *= (const object& rhs) {
-			*this = *this * rhs;
+		object& operator *= (const object<T>& rhs) {
+			*this->_comp *= rhs.get_comp_at_basis(*this);
+			return *this;
+		}
+
+		object& operator *= (const container<T>& rhs) {
+			*this->_comp *= rhs;
 			return *this;
 		}
 
 		object& operator += (const object<T>& rhs) {
-			auto rhsa = rhs.get_comp_at_basis(*this);
-			*this->_comp += rhsa;
+			*this->_comp += rhs.get_comp_at_basis(*this);
 			return *this;
 		}
 
@@ -250,8 +254,12 @@ namespace tens {
 		}
 
 		object& operator -= (const object<T>& rhs) {
-			auto rhsa = rhs.get_comp_at_basis(*this);
-			*this->_comp -= rhsa;
+			*this->_comp -= rhs.get_comp_at_basis(*this);
+			return *this;
+		}
+
+		object& operator -= (const container<T>& rhs) {
+			*this->_comp -= rhs;
 			return *this;
 		}
 
@@ -301,9 +309,12 @@ namespace tens {
 	template<typename T>
 	container<T> func(const tens::container<T>& M, T(&f)(T)) {
 		auto p = eigen(M);
-		for (size_t i = 0; i < M.size(); i++)
+		std::cout << "eigen " << p.first << std::endl;
+		const size_t size = M.size();
+		for (size_t i = 0; i < size; i++)
 			p.first[i] = f(p.first[i]);
 		auto obj = object<T>(p.first, p.second);
+		std::cout << "obj " << obj << std::endl;
 		obj.change_basis(GLOBAL_BASIS<T>);
 		return obj.comp();
 	}

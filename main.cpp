@@ -68,7 +68,6 @@ int main()
 		v1 = v4 - v3;
 		v1 = v4 + v3;
 		auto vres1 = v1 * v3;
-		double vresd = vres1;
 		auto tvres2 = v4 * t1;
 		t1 = t2 * t2;
 		t1 = t2 * 2.0;

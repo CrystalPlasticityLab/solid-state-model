@@ -324,6 +324,17 @@ namespace tens {
 			}
 			return false;
 		}
+		T trace() const {
+			if (_rank == 1) return *this;
+			if (_rank == 2 && _dim == 3) {
+				T trace(0);
+				for (size_t i = 0; i < _dim; i++)	{
+					trace += (*this)[i];
+				}
+				return trace;
+			}
+			throw NoImplemetationYet();
+		}
 
 		[[nodiscard]] container<T> transpose() const {
 			if (_rank == 1) return *this;
@@ -332,6 +343,18 @@ namespace tens {
 				std::swap(nhs[3], nhs[6]);
 				std::swap(nhs[4], nhs[7]);
 				std::swap(nhs[5], nhs[8]);
+				return nhs;
+			}
+			throw NoImplemetationYet();
+		}
+
+		[[nodiscard]] container<T> symmetrize() const {
+			if (_rank == 1) return *this;
+			if (_rank == 2 && _dim == 3) {
+				container<T> nhs(*this);
+				nhs[3] = (nhs[3] + nhs[6])*T(0.5); nhs[6] = nhs[3];
+				nhs[4] = (nhs[4] + nhs[7])*T(0.5); nhs[7] = nhs[4];
+				nhs[5] = (nhs[5] + nhs[8])*T(0.5); nhs[8] = nhs[5];
 				return nhs;
 			}
 			throw NoImplemetationYet();

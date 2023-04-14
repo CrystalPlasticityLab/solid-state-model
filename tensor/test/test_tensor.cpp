@@ -1,5 +1,15 @@
 #include "test.h"
 
+double forward(double x) {
+    return x * x * x;
+};
+double backward(double x) {
+    if (x < 0)
+        return -pow(-x, 0.333333333333333333);
+    else
+        return pow(x, 0.333333333333333333);
+};
+
 void test_tensor(){
     using namespace tens;
 
@@ -138,6 +148,26 @@ void test_tensor(){
         pass_tests += expect((ref_obj == eig_obj), "eigen test");
         all_tests++;
     }
+    {
+        auto I2 = IDENT_MATRIX<double> * 2.0;
+
+        auto I2sqrt = func(I2, sqrt) - (IDENT_MATRIX<double> * sqrt(2.0));
+        auto err = I2sqrt.trace();
+        pass_tests += expect(math::is_small_value(err), "func of matrix test #1");
+        all_tests++;
+    }
+    {
+        // TODO: check accuracy of eigen
+        // auto m1sqrt = func(m1, forward);
+        // auto m1log = func(m1sqrt, backward);
+        // auto err = (m1- m1log);
+        // std::cout << m1;
+        // std::cout << m1sqrt;
+        // std::cout << m1log;
+        // pass_tests += expect(err == m_zero, "func of matrix test #2");
+        // all_tests++;
+    }
+    
    //{
    //    auto tr1 = t11;
    //    //tr1.move_to_basis(basis2);
