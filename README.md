@@ -1,4 +1,6 @@
 # Tensor
+Class `object` is a handler of invariant tensor object that is represented by components and basis at any time.
+
 Base class `container` may contain of arrays with any dimension and rank (even rank = 0 for scalar arrays).
 Based on `container` class `object` provides basic tensor-vector and scalar arrays calculus in N dimensional spatial.
 
@@ -26,11 +28,16 @@ Class `StateMeasure` based on `object` class is providing unified logic for work
 - `finit_equation()` - evolution equation in finite form (describes dependency of finite value on set of parameters and set of **SV**'s)
 - `calc_rate()` - by default it is the first order schema to calculate rate, may be overriden
 - `integrate_value(T dt)` - by default the first order (Euler) schema to integrate value, may be overriden
-- 
+
+# Implemented measures
+There are a few predefined wide used strain and stress measures:
+- deformation gradient `GradDeform`, it is a base measure in a [Finite strain therory](https://en.wikipedia.org/wiki/Finite_strain_theory)
+- Cauchy stress measure `CaushyStress`, it is a base measure [Caushy stress](https://en.wikipedia.org/wiki/Cauchy_stress_tensor) from wich (and `GradDeform`) my be derivated another stress measures like Piola–Kirchhoff tensor.
+
 # Numerical schema
 Base abstract class `AbstractSchema` describes main functionality:
 - `init()` - assumed that it is called before calc rate/finite and integration procedure
-- `step()` - the main stage of numerical schema, `rate` or `value` on the end of current step are calculated
+- `calc()` - the main stage of numerical schema, `rate` or `value` on the end of current step are calculated
 - `finalize()` - actions after if necessery
 
 There are a few types of numerical schema:
