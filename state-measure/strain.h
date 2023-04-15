@@ -25,7 +25,6 @@ namespace measure {
 				(df *= -dt) += IDENT_MATRIX<T>; // I - L*dt
 				inverse(df); // (I - L * dt)^-1 * F
 				df *= this->value();
-				StateMeasure<T>::update_value();
 			};
 
 			// calc a new rate L
@@ -33,21 +32,18 @@ namespace measure {
 				auto& L = this->rate_temp = this->value_prev(); // fn_1
 				L *= this->value().inverse(); // fn_1 * fn^-1
 				(L -= IDENT_MATRIX<T>) /= (-dt); // (I - fn_1 * fn^-1)/ dt
-				StateMeasure<T>::update_rate();
 			};
 
 			// assignment a new rate L
 			virtual void rate_equation() override {
 				auto& L = this->rate_temp;
 				L.fill_value(tens::FILL_TYPE::INDENT);
-				StateMeasure<T>::update_rate();
 			};
 
 			// assignment a new value F 
 			virtual void finit_equation() override {
 				auto& F = this->value_temp;
 				F.fill_value(tens::FILL_TYPE::INDENT);
-				StateMeasure<T>::update_value();
 			};
 
 			// ---------------------------------- helper functions ----------------------------------------

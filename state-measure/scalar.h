@@ -14,7 +14,6 @@ namespace measure {
 
 			virtual void rate_equation() override {
 				this->rate_temp.fill_value(1.0);
-				StateMeasure<T>::update_rate();
 			}
 
 			virtual void finit_equation() override {
