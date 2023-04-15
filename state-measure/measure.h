@@ -129,9 +129,9 @@ namespace measure {
 
 	template<typename T>
 	class StateMeasure : public tens::object<T>, public AbstractMeasure<tens::container, T> {
-		std::weak_ptr<State<T>> _state;
+		State<T> _state;
 	public:
-		StateMeasure(std::shared_ptr<State<T>>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type = tens::FILL_TYPE::ZERO) :
+		StateMeasure(State<T>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type = tens::FILL_TYPE::ZERO) :
 			tens::object<T>(dim, rank, type, state->basis()),
 			_state(state),
 			AbstractMeasure<tens::container, T>(
@@ -153,10 +153,8 @@ namespace measure {
 
 		// access by const ref to other Measures in the State
 		const StateMeasure<T>& operator[] (std::string name) {
-			if (std::shared_ptr<State<T>> state = this->_state.lock()) {
-				return *(*state.get())[name];
-			}
-			throw new error::StateNotLinked();
+			_state ? false : new error::StateNotLinked();
+			return *(*_state.get())[name];
 		}
 	};
 };

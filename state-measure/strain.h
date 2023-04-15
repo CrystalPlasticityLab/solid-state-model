@@ -14,7 +14,7 @@ namespace measure {
 			tens::object<T> E;  //  (Ft*F-I)/2
 			tens::object<T> dE; //  dE/dt = Ft*(L+Lt)*F/2
 		public:
-			GradDeform(std::shared_ptr<State<T>>& state) : 
+			GradDeform(State<T>& state) : 
 				StateMeasure<T>(state, 3, 2, DEFORM_GRADIENT, tens::FILL_TYPE::INDENT), 
 				 E(3, 2, tens::FILL_TYPE::ZERO, state->basis()),
 				dE(3, 2, tens::FILL_TYPE::ZERO, state->basis()) {};

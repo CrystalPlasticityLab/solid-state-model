@@ -10,7 +10,7 @@ namespace measure {
 		template<typename T>
 		class Scalar : public StateMeasure<T> {
 		public:
-			Scalar(std::shared_ptr<State<T>>& state, size_t dim) : StateMeasure<T>(state, dim, 0, SCALAR_ARRAY, tens::FILL_TYPE::ZERO) {};
+			Scalar(State<T>& state, size_t dim) : StateMeasure<T>(state, dim, 0, SCALAR_ARRAY, tens::FILL_TYPE::ZERO) {};
 
 			virtual void rate_equation() override {
 				this->rate_temp.fill_value(1.0);

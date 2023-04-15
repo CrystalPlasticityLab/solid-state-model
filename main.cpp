@@ -9,6 +9,7 @@
 #include "./state-measure/scalar.h"
 #include "./state-measure/strain.h"
 #include "./state-measure/stress.h"
+#include "./models/elasticity.h"
 
 const size_t DIM = 3;
 std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -71,18 +72,16 @@ int main()
 		auto tvres2 = v4 * t1;
 		t1 = t2 * t2;
 		t1 = t2 * 2.0;
-
-		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-		auto state = state::create(std::move(R));
-		state::add<measure::scalar::Scalar, double, 10>(state, numerical_schema::type_schema::RATE_CALCULATE);
-		state::add<measure::strain::GradDeform, double>(state, numerical_schema::type_schema::RATE_CALCULATE);
-		state::add<measure::stress::CaushyStress, double>(state, numerical_schema::type_schema::RATE_CALCULATE);
-
-		std::cout << *state;
-		for (size_t i = 0; i < 100000; i++){
-			state->step(1e-6);
+		
+		auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
+		{
+			auto elasticity = model::Elasticity(std::move(Q));
+			std::cout << *elasticity;
+			for (size_t i = 0; i < 100000; i++) {
+				elasticity->step(1e-6);
+			}
+			std::cout << *elasticity;
 		}
-		std::cout << *state;
 	}
 	return 0;
 }
