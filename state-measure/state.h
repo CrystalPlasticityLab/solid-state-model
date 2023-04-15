@@ -22,11 +22,6 @@ namespace state {
 		T _dt;
 		T _t;
 
-		State(Basis<T>&& basis) noexcept {
-			_dt = T();
-			_basis = std::move(basis);
-		}
-
 		template<template<class> class P, class T>
 		void link(P<T>&& obj) {
 			const auto& name = obj->name();
@@ -40,6 +35,11 @@ namespace state {
 		State& operator = (State&&) noexcept = delete;
 		State(const State&) = delete;
 		State(State&&) noexcept = delete;
+	protected:
+		State(Basis<T>&& basis) noexcept {
+			_dt = T();
+			_basis = std::move(basis);
+		}
 	public:
 		const Basis<T>& basis() {
 			return _basis;
@@ -48,7 +48,7 @@ namespace state {
 		template<typename T>
 		friend std::ostream& operator<< (std::ostream& o, const State<T>& b);
 
-		template<typename T>
+		template<template<class> class Q, class T>
 		friend [[nodiscard]] std::shared_ptr<State<T>> create(Basis<T>&& basis) noexcept;
 
 		template<template<class> class Q, class T>
@@ -96,9 +96,9 @@ namespace state {
 		);
 	}
 
-	template<typename T>
+	template<template<class> class Q, class T>
 	[[nodiscard]] std::shared_ptr<State<T>> create(Basis<T>&& basis) noexcept {
-		return std::shared_ptr<State<T>>(new State<T>(std::move(basis)));
+		return std::shared_ptr<State<T>>(new Q<T>(std::move(basis)));
 	}
 
 	template<typename T>
