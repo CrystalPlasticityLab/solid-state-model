@@ -1,5 +1,6 @@
 #pragma once
 
+//#include "schema.h"
 namespace state {
 	template<typename T>
 	class State;
@@ -24,22 +25,8 @@ namespace measure {
 		Q<T> _rate;
 		Q<T> _value_prev;
 		Q<T> _rate_prev;
+		int _lock = 0; // to prevent updates during calc step
 	protected:
-		// method uses value_temp as a new one (swap pointers, more efficient)
-		void update_value() {
-			// _value = _value_temp, _value_temp = _value
-			std::swap(_value, value_temp);
-			// _value_temp = _value_prev, _value_prev = _value_temp
-			std::swap(_value_prev, value_temp);
-			// _value = _value_temp, _value_prev = _value, _value_temp = _value_prev
-		};
-
-		// method uses rate_temp as a new one (swap pointers, more efficient)
-		void update_rate() {
-			std::swap(_rate, rate_temp);
-			std::swap(_rate_prev, rate_temp);
-		};
-
 		// use reference rate_temp / value_temp for temporary calculation to prevent a new allocation
 		// update_rate()/update_value() use rate_temp / value_temp value as a new one (for more info see declaration)
 		// WARNING: rate_temp / value_temp variables updating and calling update_rate()/update_value() must be in one scope
@@ -56,11 +43,44 @@ namespace measure {
 			rate_temp(_rate) {};
 
 		// const refs to private fields
-		const Q<T>& rate() { return _rate; };
-		const Q<T>& value() { return _value; };
-		const Q<T>& rate_prev() { return _rate_prev; };
-		const Q<T>& value_prev() { return _value_prev; };
+		const Q<T>& rate() const { return _rate; };
+		const Q<T>& value() const { return _value; };
+		const Q<T>& rate_prev() const { return _rate_prev; };
+		const Q<T>& value_prev() const { return _value_prev; };
 		const std::string& name() const { return _name; };
+
+		// to prevent modifying rate and value you should lock measure
+		int lock() {
+			return _lock = rand();
+		}
+		// to modify rate and value you should unlock measure
+		bool unlock(int lock_value) {
+			if (lock_value == _lock) {
+				_lock = 0;
+				return true;
+			}
+			return false;
+		}
+		// method uses value_temp as a new one (swap pointers, more efficient)
+		void update_value() {
+#ifdef _DEBUG
+			if (_lock) throw new std::logic_error("updates are locked");
+#endif
+			// _value = _value_temp, _value_temp = _value
+			std::swap(_value, value_temp);
+			// _value_temp = _value_prev, _value_prev = _value_temp
+			std::swap(_value_prev, value_temp);
+			// _value = _value_temp, _value_prev = _value, _value_temp = _value_prev
+		};
+
+		// method uses rate_temp as a new one (swap pointers, more efficient)
+		void update_rate() {
+#ifdef _DEBUG
+			if (_lock) throw new std::logic_error("updates are locked");
+#endif
+			std::swap(_rate, rate_temp);
+			std::swap(_rate_prev, rate_temp);
+		};
 
 		// ============================================================================= //
 		//		PERFORMANCE NOTE: to prevent unnecessery allocations use				 //
@@ -86,7 +106,6 @@ namespace measure {
 			rate_temp = _value;
 			rate_temp -= _value_prev;
 			rate_temp /= dt;
-			update_rate();
 		};
 
 		// the first order (Euler) schema to integrate value, may be overriden
@@ -96,7 +115,6 @@ namespace measure {
 			value_temp = _rate;
 			value_temp *= dt;
 			value_temp += _value;
-			update_value();
 		};
 
 		template<template<class> class Q, class T>
@@ -111,9 +129,9 @@ namespace measure {
 
 	template<typename T>
 	class StateMeasure : public tens::object<T>, public AbstractMeasure<tens::container, T> {
-		std::weak_ptr<State<T>> _state;
+		State<T> _state;
 	public:
-		StateMeasure(std::shared_ptr<State<T>>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type = tens::FILL_TYPE::ZERO) :
+		StateMeasure(State<T>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type = tens::FILL_TYPE::ZERO) :
 			tens::object<T>(dim, rank, type, state->basis()),
 			_state(state),
 			AbstractMeasure<tens::container, T>(
@@ -135,10 +153,8 @@ namespace measure {
 
 		// access by const ref to other Measures in the State
 		const StateMeasure<T>& operator[] (std::string name) {
-			if (std::shared_ptr<State<T>> state = this->_state.lock()) {
-				return *(*state.get())[name];
-			}
-			throw new error::StateNotLinked();
+			_state ? false : new error::StateNotLinked();
+			return *(*_state.get())[name];
 		}
 	};
 };
