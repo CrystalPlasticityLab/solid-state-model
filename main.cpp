@@ -35,7 +35,7 @@ int main()
 		using namespace tens;
 		const auto qwew = container<double>(30, 0);
 		//func(qwew, sqrt);
-		run_test();
+		//run_test();
 		//const auto yy = container<double>(30, 2, std::move(std::unique_ptr<double>(arr)));
 		const auto xx = container<double>(30, 0);
 		auto scalar = container<double>(1, 1, 0.4534535);
@@ -74,14 +74,13 @@ int main()
 
 		auto R = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
 		auto state = state::create(std::move(R));
-		state->set_time_integration_step(1e-6);
 		state::add<measure::scalar::Scalar, double, 10>(state, numerical_schema::type_schema::RATE_CALCULATE);
 		state::add<measure::strain::GradDeform, double>(state, numerical_schema::type_schema::RATE_CALCULATE);
 		state::add<measure::stress::CaushyStress, double>(state, numerical_schema::type_schema::RATE_CALCULATE);
 
 		std::cout << *state;
 		for (size_t i = 0; i < 100000; i++){
-			state->step();
+			state->step(1e-6);
 		}
 		std::cout << *state;
 	}

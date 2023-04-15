@@ -17,7 +17,7 @@ namespace state {
 	};
 
 	template<typename T>
-	class State : public std::unordered_map<const std::string, std::unique_ptr<DefaultSchema<T>>, StringHasher>, public AbstractSchema {
+	class State : public std::unordered_map<const std::string, std::unique_ptr<DefaultSchema<T>>, StringHasher>, public AbstractSchema<T> {
 		Basis<T> _basis;
 		T _dt;
 		T _t;
@@ -44,9 +44,7 @@ namespace state {
 		const Basis<T>& basis() {
 			return _basis;
 		}
-		T dt() { return _dt; };
 		T t() { return _t; };
-		void set_time_integration_step(T dt) { _dt = dt; };
 		template<typename T>
 		friend std::ostream& operator<< (std::ostream& o, const State<T>& b);
 
@@ -65,10 +63,11 @@ namespace state {
 			}
 		};
 
-		virtual void calc() override {
+		virtual void calc(T dt) override {
 			for (auto& obj : *this) {
-				obj.second->calc();
+				obj.second->calc(dt);
 			}
+			_dt = dt;
 		};
 
 		virtual void finalize() override {
@@ -84,8 +83,7 @@ namespace state {
 		state->link(
 			numerical_schema::DefaultSchema<T>(
 				type_schema, 
-				std::make_unique<Q<T>>(Q<T>(state)), 
-				state->_dt)
+				std::make_unique<Q<T>>(Q<T>(state)))
 		);
 	}
 
@@ -94,8 +92,7 @@ namespace state {
 		state->link(
 			numerical_schema::DefaultSchema<T>(
 				type_schema,
-				std::make_unique<Q<T>>(Q<T>(state, N)),
-				state->_dt)
+				std::make_unique<Q<T>>(Q<T>(state, N)))
 		);
 	}
 
