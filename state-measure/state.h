@@ -18,73 +18,20 @@ namespace state {
 	};
 
 	template<typename T>
-	class StateBase : public std::unordered_map<const std::string, std::unique_ptr<DefaultSchema<T>>, StringHasher>, public AbstractSchema<T> {
-		Basis<T> _basis;
-		T _dt;
-		T _t;
-
-		template<template<class> class P, class T>
-		void link(P<T>&& obj) {
-			const auto& name = obj->name();
-			if (this->find(name) != this->end()) {
-				throw ErrorAccess::Exists();
-			};
-			this->insert({ name, std::make_unique<P<T>>(std::forward<P<T>>(obj)) });
-		}
-
+	class StateBase : public std::unordered_map<const std::string, std::shared_ptr<DefaultSchema<T>>, StringHasher> {
 		StateBase& operator = (const StateBase&) = delete;
 		StateBase& operator = (StateBase&&) noexcept = delete;
 		StateBase(const StateBase&) = delete;
 		StateBase(StateBase&&) noexcept = delete;
 	public:
-		StateBase(Basis<T>&& basis) noexcept {
-			_dt = T();
-			_t = T();
-			_basis = std::move(basis);
-		}
-		const Basis<T>& basis() {
-			return _basis;
-		}
-		T t() { return _t; };
-		template<typename T>
-		friend std::ostream& operator<< (std::ostream& o, const StateBase<T>& b);
-
-		virtual void init() override {
-			for (auto& obj : *this) {
-				obj.second->init();
-			}
-		};
-
-		virtual void calc(T dt) override {
-			for (auto& obj : *this) {
-				obj.second->calc(dt);
-			}
-			_dt = dt;
-		};
-
-		virtual void finalize() override {
-			for (auto& obj : *this) {
-				obj.second->finalize();
-			}
-			_t += _dt;
-		};
+		StateBase() {};
 	};
 
 
 	template<typename T>
-	std::ostream& operator<<(std::ostream& out, const StateBase<T>& b) {
-		out << "Basis    : " << *b._basis << std::endl;
-		out << "Measures : \n";
-		for (const auto& obj : b) {
-			const auto& value = (*obj.second)->value();
-			const auto& rate = (*obj.second)->rate();
-			out << " - " << obj.first << ": value = " << value << ", rate = " << rate << std::endl;
-		}
-		return out;
-	};
-
-	template<typename T>
-	class State : public std::shared_ptr<StateBase<T>> {
+	class State : protected std::shared_ptr<StateBase<T>>, public AbstractSchema<T> {
+		Basis<T> _basis;
+		T _dt;
 		template<template<class> class P, class T>
 		void link(P<T>&& obj) {
 			const auto& name = obj->name();
@@ -94,8 +41,9 @@ namespace state {
 			(*this)->insert({ name, std::make_unique<P<T>>(std::forward<P<T>>(obj)) });
 		}
 	protected:
+		StateBase<T>& state;
 		template<template<class> class Q, class T>
-		void add(numerical_schema::type_schema type_schema) {
+		void add(numerical_schema::type_schema type_schema = numerical_schema::DEFAULT_NUMERICAL_SCHEMA) {
 			this->link(
 				numerical_schema::DefaultSchema<T>(
 					type_schema,
@@ -104,7 +52,7 @@ namespace state {
 		}
 
 		template<template<class> class Q, class T, size_t N>
-		void add(numerical_schema::type_schema type_schema) {
+		void add(numerical_schema::type_schema type_schema = numerical_schema::DEFAULT_NUMERICAL_SCHEMA) {
 			this->link(
 				numerical_schema::DefaultSchema<T>(
 					type_schema,
@@ -112,9 +60,45 @@ namespace state {
 			);
 		}
 	public:
-		State(Basis<T>&& basis) : std::shared_ptr<StateBase<T>>(std::make_shared<StateBase<T>>(std::move(basis))) {};
-		~State() {
-			return;
+		State(Basis<T>&& basis) : 
+			std::shared_ptr<StateBase<T>>(std::make_shared<StateBase<T>>()), 
+			_basis(std::move(basis)),
+			_dt(0), state(*(*this)) {
+		};
+
+		const Basis<T>& basis() {
+			return _basis;
 		}
+		virtual void init() override {
+			for (auto& obj : **this) {
+				obj.second->init();
+			}
+		};
+
+		// virtual void calc(T dt) override {
+		// 	throw new std::logic_error("`calc` method must be implemented in children classes");
+		// };
+
+		virtual void finalize() override {
+			for (auto& obj : **this) {
+				obj.second->finalize();
+			}
+			AbstractSchema<T>::_t += _dt;
+		};
+
+		template<typename T>
+		friend std::ostream& operator<< (std::ostream& o, const State<T>& b);
+	};
+
+	template<typename T>
+	std::ostream& operator<<(std::ostream& out, const State<T>& b) {
+		out << "Basis    : " << *b._basis << std::endl;
+		out << "Measures : \n";
+		for (const auto& obj : *b) {
+			const auto& value = (*obj.second)->value();
+			const auto& rate = (*obj.second)->rate();
+			out << " - " << obj.first << ": value = " << value << ", rate = " << rate << std::endl;
+		}
+		return out;
 	};
 }

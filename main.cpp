@@ -16,6 +16,7 @@ std::random_device rd;  // Will be used to obtain a seed for the random number e
 std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
 extern std::uniform_real_distribution<double> unidistr = std::uniform_real_distribution<double>((double)0, (double)1);
 
+numerical_schema::type_schema numerical_schema::DEFAULT_NUMERICAL_SCHEMA = numerical_schema::type_schema::RATE_CALCULATE;
 int main() 
 {
 #ifdef _DEBUG
@@ -73,14 +74,23 @@ int main()
 		t1 = t2 * t2;
 		t1 = t2 * 2.0;
 		
-		auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
 		{
-			auto elasticity = model::Elasticity(std::move(Q));
-			std::cout << *elasticity;
-			for (size_t i = 0; i < 100000; i++) {
-				elasticity->step(1e-6);
+			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
+			auto elasticity = model::Elasticity<model::HypoElasticRelation, double>(std::move(Q));
+			std::cout << elasticity;
+			for (size_t i = 0; i < 1000; i++) {
+				elasticity.step(1e-4);
 			}
-			std::cout << *elasticity;
+			std::cout << elasticity;
+		}
+		{
+			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
+			auto elasticity = model::Elasticity<model::HyperElasticRelation, double>(std::move(Q));
+			std::cout << elasticity;
+			for (size_t i = 0; i < 10000; i++) {
+				elasticity.step(1e-5);
+			}
+			std::cout << elasticity;
 		}
 	}
 	return 0;

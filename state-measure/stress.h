@@ -13,13 +13,11 @@ namespace measure {
 		public:
 			CaushyStress(State<T>& state) : StateMeasure<T>(state, 3, 2, CAUCHY, tens::FILL_TYPE::ZERO) {};
 
-			virtual void rate_equation() override {
-				// evolution equation in rate form
-			}
+			// evolution equation in rate form
+			virtual void rate_equation() override {}
 
-			virtual void finit_equation() override {
-				// evolution equation in finite form
-			};
+			// evolution equation in finite form
+			virtual void finit_equation(T t) override {};
 		};
 	}
 };
