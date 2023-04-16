@@ -56,10 +56,12 @@ namespace numerical_schema {
 	template <typename T>
 	class AbstractSchema {
 	protected:
+		T _t = 0;
 		virtual void init() = 0;
 		virtual void calc(T dt) = 0;
 		virtual void finalize() = 0;
 	public:
+		T t() { return _t; };
 		virtual void step(T dt) {
 			init();
 			calc(dt);
@@ -74,10 +76,13 @@ namespace numerical_schema {
 		FINITE_CALCULATE // X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt
 	};
 
+	extern type_schema DEFAULT_NUMERICAL_SCHEMA;
+
 	template <typename T>
 	class DefaultSchema : public std::unique_ptr<measure::StateMeasure<T>>, protected AbstractSchema<T> {
 		type_schema _type;
 		int _key = 0;
+	protected:
 	public:
 		DefaultSchema(type_schema type,
 			std::unique_ptr<measure::StateMeasure<T>> &&measure) :
@@ -90,19 +95,23 @@ namespace numerical_schema {
 		virtual void calc(T dt) {
 			auto& measure = *(*this);
 #ifdef _DEBUG
-			_key = measure.lock();
+			//_key = measure.lock();
 #endif
 			switch (_type)
 			{
 			case numerical_schema::type_schema::RATE_CALCULATE:
 				measure.rate_equation();
 			case numerical_schema::type_schema::RATE_ASSIGN:
+				measure.update_rate();
 				measure.integrate_value(dt);
+				measure.update_value();
 				break;
 			case numerical_schema::type_schema::FINITE_CALCULATE:
-				measure.finit_equation();
+				measure.finit_equation(AbstractSchema<T>::_t);
 			case numerical_schema::type_schema::FINITE_ASSIGN:
+				measure.update_value();
 				measure.calc_rate(dt);
+				measure.update_rate();
 				break;
 			default:
 				throw new error::UndefinedNumericalSchema();
@@ -113,10 +122,12 @@ namespace numerical_schema {
 		virtual void finalize() override {
 			auto& measure = *(*this);
 #ifdef _DEBUG
-			measure.unlock(_key);
+			//measure.unlock(_key);
 #endif
-			measure.update_rate();
-			measure.update_value();
 		};
+
+		void set_numerical_schema(numerical_schema::type_schema type) {
+			_type = type;
+		}
 	};
 };

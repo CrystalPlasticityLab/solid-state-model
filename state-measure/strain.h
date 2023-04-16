@@ -11,13 +11,13 @@ namespace measure {
 		// see https://en.wikipedia.org/wiki/Finite_strain_theory for more information
 		template<typename T>
 		class GradDeform : public StateMeasure<T> {
-			tens::object<T> E;  //  (Ft*F-I)/2
-			tens::object<T> dE; //  dE/dt = Ft*(L+Lt)*F/2
+			tens::container<T> E;  //  (Ft*F-I)/2
+			tens::container<T> dE; //  dE/dt = Ft*(L+Lt)*F/2
 		public:
 			GradDeform(State<T>& state) : 
 				StateMeasure<T>(state, 3, 2, DEFORM_GRADIENT, tens::FILL_TYPE::INDENT), 
-				 E(3, 2, tens::FILL_TYPE::ZERO, state->basis()),
-				dE(3, 2, tens::FILL_TYPE::ZERO, state->basis()) {};
+				 E(3, 2, tens::FILL_TYPE::ZERO),
+				dE(3, 2, tens::FILL_TYPE::ZERO) {};
 
 			// calc a new value F
 			virtual void integrate_value(T dt) override {
@@ -35,16 +35,10 @@ namespace measure {
 			};
 
 			// assignment a new rate L
-			virtual void rate_equation() override {
-				auto& L = this->rate_temp;
-				L.fill_value(tens::FILL_TYPE::INDENT);
-			};
+			virtual void rate_equation() override;
 
 			// assignment a new value F 
-			virtual void finit_equation() override {
-				auto& F = this->value_temp;
-				F.fill_value(tens::FILL_TYPE::INDENT);
-			};
+			virtual void finit_equation(T t) override;
 
 			// ---------------------------------- helper functions ----------------------------------------
 			std::pair<tens::container<T>, tens::container<T>> polar_decomposition() {
@@ -75,7 +69,7 @@ namespace measure {
 			}
 
 			//  (Ft*F-I)/2
-			const tens::object<T>& lagrangian_strain_tensor() {
+			const tens::container<T>& lagrangian_strain_tensor() {
 				E = this->value_temp;
 				const auto& F = this->value();
 				E = F.transpose(); // F
@@ -85,7 +79,7 @@ namespace measure {
 			}
 		
 			//  dE/dt = Ft*(L+Lt)*F/2
-			const tens::object<T>& lagrangian_strain_rate_tensor() {
+			const tens::container<T>& lagrangian_strain_rate_tensor() {
 				const auto& F = this->value();
 				dE = F.transpose();
 				dE *= (this->rate().symmetrize() *= F);

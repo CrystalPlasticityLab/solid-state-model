@@ -61,6 +61,9 @@ namespace measure {
 			}
 			return false;
 		}
+		void update_value(const Q<T>& value) {
+			value_temp = value;
+		};
 		// method uses value_temp as a new one (swap pointers, more efficient)
 		void update_value() {
 #ifdef _DEBUG
@@ -73,6 +76,9 @@ namespace measure {
 			// _value = _value_temp, _value_prev = _value, _value_temp = _value_prev
 		};
 
+		void update_rate(const Q<T>& rate) {
+			rate_temp = rate;
+		};
 		// method uses rate_temp as a new one (swap pointers, more efficient)
 		void update_rate() {
 #ifdef _DEBUG
@@ -97,7 +103,7 @@ namespace measure {
 		// value must be updated by calling update_value
 		// use reference this->value_temp() for temporary calculation to prevent a new allocation
 		// update_value() uses this->value_temp value as a new one (for more info see declaration)
-		virtual void finit_equation() = 0;
+		virtual void finit_equation(T t) = 0;
 
 		// the first order schema to calculate rate, may be overriden
 		// use reference this->rate_temp() for temporary calculation to prevent a new allocation
@@ -129,10 +135,10 @@ namespace measure {
 
 	template<typename T>
 	class StateMeasure : public tens::object<T>, public AbstractMeasure<tens::container, T> {
-		State<T> _state;
+		const State<T>& _state;
 	public:
 		StateMeasure(State<T>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type = tens::FILL_TYPE::ZERO) :
-			tens::object<T>(dim, rank, type, state->basis()),
+			tens::object<T>(dim, rank, type, state.basis()),
 			_state(state),
 			AbstractMeasure<tens::container, T>(
 				name,
@@ -152,7 +158,7 @@ namespace measure {
 		}
 
 		// access by const ref to other Measures in the State
-		const StateMeasure<T>& operator[] (std::string name) {
+		const StateMeasure<T>& operator[] (const std::string& name) const {
 			_state ? false : new error::StateNotLinked();
 			return *(*_state.get())[name];
 		}

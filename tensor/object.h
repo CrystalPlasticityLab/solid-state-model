@@ -309,12 +309,10 @@ namespace tens {
 	template<typename T>
 	container<T> func(const tens::container<T>& M, T(&f)(T)) {
 		auto p = eigen(M);
-		std::cout << "eigen " << p.first << std::endl;
 		const size_t size = M.size();
 		for (size_t i = 0; i < size; i++)
 			p.first[i] = f(p.first[i]);
 		auto obj = object<T>(p.first, p.second);
-		std::cout << "obj " << obj << std::endl;
 		obj.change_basis(GLOBAL_BASIS<T>);
 		return obj.comp();
 	}

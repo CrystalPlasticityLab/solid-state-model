@@ -16,7 +16,7 @@ namespace measure {
 				this->rate_temp.fill_value(1.0);
 			}
 
-			virtual void finit_equation() override {
+			virtual void finit_equation(T t) override {
 			};
 		};
 	};
