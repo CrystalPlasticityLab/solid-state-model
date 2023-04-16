@@ -45,9 +45,22 @@ There are a few types of numerical schema:
 - `RATE_CALCULATE`: *dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)dt*
 - `FINITE_ASSIGN`: *X(n+1) := x_new, dX(n+1) = (X(n+1)-X(n))/dt*
 - `FINITE_CALCULATE`: *X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt*
-- 
+
 Class `DefaultSchema` implements (abstract methods of `AbstractSchema`) a plain first order numerical schema over `StateMeasure`.
 
 # State
-Class `state` has array of `measure` that describe a state of an object.
+Class `State` has array of `measure`'s that describes a state of an object.
 State has only one `basis` object so any tensor measures are linked to the same basis, at the same time indifferent scalar measures are not linked to any basis.
+
+# Models
+Any class inherited from class `State` is a material model contains array of `measure`'s, logic of any neccesary calculation and `Relation` links two `measure`'s. 
+
+# Relation
+Class `Relation` implements relationship between two arbitrary object inherited from `DefaultSchema`.
+
+## Base Elastic Relation
+`ElasticRelation` inherited from `Relation` and implements relationship between `CaushyStress` and `GradDeform` in any combination.
+There are two relations:
+- `HypoElasticRelation` inherited from `ElasticRelation` and implements relationship between `CaushyStress` and lagrangian strain tensor (derived from `GradDeform`)
+- `HyperElasticRelation` inherited from `ElasticRelation` and implements relationship between `CaushyStress` and spatial velocity gradient (derived from rate of `GradDeform`)
+
