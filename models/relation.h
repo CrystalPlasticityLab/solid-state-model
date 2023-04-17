@@ -2,33 +2,25 @@
 #include "../state-measure/state.h"
 
 namespace model {
+	// enum class type {
+	// 	RATE,
+	// 	FINIT
+	// };
 	using namespace state;
 	using namespace measure;
 
 	template <typename T>
-	using MeasureType = DefaultSchema<T>;
+	using pMeasure = std::shared_ptr<DefaultSchema<T>>;
 
+	// binary relatoin G(x) : S(F)
 	template<typename T>
-	class Relation : public std::pair<MeasureType<T>&, MeasureType<T>&>, public AbstractSchema<T> {
-	public:
-		Relation(std::shared_ptr<DefaultSchema<T>>& _S, std::shared_ptr<DefaultSchema<T>>& _F) :
-			std::pair<MeasureType<T>&, MeasureType<T>&>(*_S.get(), *_F.get()){};
-	};
-
-	template<typename T>
-	class ElasticRelation : private Relation<T> { // dS = Ï:L
+	class ElasticRelation : public AbstractSchema<T> {
 	protected:
-		measure::stress::CaushyStress<T>& S;
-		measure::strain::GradDeform<T>& F;
-		DefaultSchema<T>& S_schema;
-		DefaultSchema<T>& F_schema;
+		stress::CaushyStress<T>& S;
+		strain::GradDeform<T>& F;
 	public:
-		ElasticRelation(std::shared_ptr<DefaultSchema<T>>& _S, std::shared_ptr<DefaultSchema<T>>& _F) : 
-			Relation<T>(_S, _F),
-			S(static_cast<measure::stress::CaushyStress<T>&>(**_S.get())),
-			F(static_cast<measure::strain::GradDeform<T>&>(**_F.get())),
-			S_schema(*_S.get()),
-			F_schema(*_F.get()) {};
+		ElasticRelation(pMeasure<T>& _S, pMeasure<T>& _F) :
+			S(static_cast<stress::CaushyStress<T>&>(**_S.get())),
+			F(static_cast<strain::GradDeform<T>&>(**_F.get())) {};
 	};
-
 }

@@ -159,8 +159,8 @@ namespace measure {
 
 		// access by const ref to other Measures in the State
 		const StateMeasure<T>& operator[] (const std::string& name) const {
-			_state ? false : new error::StateNotLinked();
-			return *(*_state.get())[name];
+			_state.get() ? false : new error::StateNotLinked();
+			return **(*_state.get())[name];
 		}
 	};
 };

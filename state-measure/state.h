@@ -29,22 +29,22 @@ namespace state {
 
 
 	template<typename T>
-	class State : protected std::shared_ptr<StateBase<T>>, public AbstractSchema<T> {
+	class State : public std::shared_ptr<StateBase<T>>, public AbstractSchema<T> {
 		Basis<T> _basis;
 		T _dt;
 		template<template<class> class P, class T>
-		void link(P<T>&& obj) {
+		std::shared_ptr<DefaultSchema<T>>& link(P<T>&& obj) {
 			const auto& name = obj->name();
-			if ((*this)->find(name) != (*this)->end()) {
-				throw ErrorAccess::Exists();
+			if ((*this)->find(name) == (*this)->end()) {
+				(*this)->insert({ name, std::make_unique<P<T>>(std::forward<P<T>>(obj)) });
 			};
-			(*this)->insert({ name, std::make_unique<P<T>>(std::forward<P<T>>(obj)) });
+			return (*(*this))[name];
 		}
 	protected:
 		StateBase<T>& state;
 		template<template<class> class Q, class T>
-		void add(numerical_schema::type_schema type_schema = numerical_schema::DEFAULT_NUMERICAL_SCHEMA) {
-			this->link(
+		std::shared_ptr<DefaultSchema<T>>& add(numerical_schema::type_schema type_schema = numerical_schema::DEFAULT_NUMERICAL_SCHEMA) {
+			return this->link(
 				numerical_schema::DefaultSchema<T>(
 					type_schema,
 					std::make_unique<Q<T>>(Q<T>(*this)))
@@ -52,7 +52,7 @@ namespace state {
 		}
 
 		template<template<class> class Q, class T, size_t N>
-		void add(numerical_schema::type_schema type_schema = numerical_schema::DEFAULT_NUMERICAL_SCHEMA) {
+		std::shared_ptr<DefaultSchema<T>>& add(numerical_schema::type_schema type_schema = numerical_schema::DEFAULT_NUMERICAL_SCHEMA) {
 			this->link(
 				numerical_schema::DefaultSchema<T>(
 					type_schema,
@@ -74,10 +74,6 @@ namespace state {
 				obj.second->init();
 			}
 		};
-
-		// virtual void calc(T dt) override {
-		// 	throw new std::logic_error("`calc` method must be implemented in children classes");
-		// };
 
 		virtual void finalize() override {
 			for (auto& obj : **this) {
