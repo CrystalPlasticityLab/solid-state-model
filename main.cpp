@@ -10,6 +10,7 @@
 #include "./state-measure/strain.h"
 #include "./state-measure/stress.h"
 #include "./models/elasticity.h"
+#include "./models/plasticity.h"
 
 const size_t DIM = 3;
 std::random_device rd;  // Will be used to obtain a seed for the random number engine
@@ -26,6 +27,7 @@ int main()
 	const auto gl = GLOBAL_BASIS<double>;
 	//try 
 	{
+		using namespace measure;
 		std::unordered_map<int, void*> map;
 		map.insert({ 1, new int[10] });
 		map.insert({ 2, new float[10] });
@@ -76,21 +78,33 @@ int main()
 		
 		{
 			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto elasticity = model::Elasticity<model::HypoElasticRelation, double>(std::move(Q));
+			auto elasticity = model::Elasticity<strain::GradDeform>(std::move(Q), numerical_schema::type_schema::RATE_CALCULATE);
 			std::cout << elasticity;
 			for (size_t i = 0; i < 1000; i++) {
 				elasticity.step(1e-4);
 			}
+			std::cout << "Result of hypoelasic model \n";
 			std::cout << elasticity;
 		}
 		{
 			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto elasticity = model::Elasticity<model::HyperElasticRelation, double>(std::move(Q));
+			auto elasticity = model::Elasticity<strain::GradDeform>(std::move(Q), numerical_schema::type_schema::FINITE_CALCULATE);
 			std::cout << elasticity;
 			for (size_t i = 0; i < 10000; i++) {
 				elasticity.step(1e-5);
 			}
+			std::cout << "Result of hyperelasic model \n";
 			std::cout << elasticity;
+		}
+		{
+			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
+			auto plasticity = model::Plasticity<strain::GradDeform, stress::CaushyStress, strain::GradDeformInelast, strain::GradDeformElast>(std::move(Q), numerical_schema::type_schema::RATE_CALCULATE);
+			std::cout << plasticity;
+			for (size_t i = 0; i < 10000; i++) {
+				plasticity.step(1e-5);
+			}
+			std::cout << "Result of hypoplastic model \n";
+			std::cout << plasticity;
 		}
 	}
 	return 0;

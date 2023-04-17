@@ -57,10 +57,13 @@ namespace numerical_schema {
 	class AbstractSchema {
 	protected:
 		T _t = 0;
+	public:
 		virtual void init() = 0;
 		virtual void calc(T dt) = 0;
 		virtual void finalize() = 0;
-	public:
+		void inc_time(T dt) {
+			_t += dt;
+		}
 		T t() { return _t; };
 		virtual void step(T dt) {
 			init();
@@ -70,9 +73,7 @@ namespace numerical_schema {
 	};
 
 	enum class type_schema {
-		RATE_ASSIGN,    // dX(n+1) := dx_new, X(n+1) = X(n) + dX(n+1)*dt
 		RATE_CALCULATE, // dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)*dt
-		FINITE_ASSIGN,  // X(n+1) := x_new, dX(n+1) = (X(n+1)-X(n))/dt
 		FINITE_CALCULATE // X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt
 	};
 
@@ -101,14 +102,12 @@ namespace numerical_schema {
 			{
 			case numerical_schema::type_schema::RATE_CALCULATE:
 				measure.rate_equation();
-			case numerical_schema::type_schema::RATE_ASSIGN:
 				measure.update_rate();
 				measure.integrate_value(dt);
 				measure.update_value();
 				break;
 			case numerical_schema::type_schema::FINITE_CALCULATE:
 				measure.finit_equation(AbstractSchema<T>::_t);
-			case numerical_schema::type_schema::FINITE_ASSIGN:
 				measure.update_value();
 				measure.calc_rate(dt);
 				measure.update_rate();
@@ -117,6 +116,7 @@ namespace numerical_schema {
 				throw new error::UndefinedNumericalSchema();
 				break;
 			}
+			AbstractSchema<T>::inc_time(dt);
 		};
 
 		virtual void finalize() override {

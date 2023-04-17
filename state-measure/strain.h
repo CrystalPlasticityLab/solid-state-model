@@ -9,13 +9,13 @@ namespace measure {
 
 		// Deformation gradient tensor
 		// see https://en.wikipedia.org/wiki/Finite_strain_theory for more information
-		template<typename T>
+		template<typename T = double>
 		class GradDeform : public StateMeasure<T> {
 			tens::container<T> E;  //  (Ft*F-I)/2
 			tens::container<T> dE; //  dE/dt = Ft*(L+Lt)*F/2
 		public:
-			GradDeform(State<T>& state) : 
-				StateMeasure<T>(state, 3, 2, DEFORM_GRADIENT, tens::FILL_TYPE::INDENT), 
+			GradDeform(State<T>& state, const std::string& name = DEFORM_GRADIENT) :
+				StateMeasure<T>(state, 3, 2, name, tens::FILL_TYPE::INDENT), 
 				 E(3, 2, tens::FILL_TYPE::ZERO),
 				dE(3, 2, tens::FILL_TYPE::ZERO) {};
 
@@ -85,6 +85,30 @@ namespace measure {
 				dE *= (this->rate().symmetrize() *= F);
 				return dE *= T(0.5);
 			}
+		};
+
+		const std::string DEFORM_GRADIENT_ELAST = "F_e";
+		template<typename T = double>
+		class GradDeformElast : public GradDeform<T> {
+		public:
+			GradDeformElast(State<T>& state) : GradDeform<T>(state, DEFORM_GRADIENT_ELAST) {};
+			// assignment a new rate L
+			virtual void rate_equation() override;
+
+			// assignment a new value F 
+			virtual void finit_equation(T t) override;
+		};
+
+		const std::string DEFORM_GRADIENT_INELAST = "F_in";
+		template<typename T = double>
+		class GradDeformInelast : public GradDeform<T> {
+		public:
+			GradDeformInelast(State<T>& state) : GradDeform<T>(state, DEFORM_GRADIENT_INELAST) {};
+			// assignment a new rate L
+			virtual void rate_equation() override;
+
+			// assignment a new value F 
+			virtual void finit_equation(T t) override;
 		};
 	};
 };
