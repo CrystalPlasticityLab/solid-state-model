@@ -41,9 +41,7 @@ Base abstract class `AbstractSchema` describes main functionality:
 - `finalize()` - actions after if necessery
 
 There are a few types of numerical schema:
-- `RATE_ASSIGN`: *dX(n+1) := dx_new, X(n+1) = X(n) + dX(n+1)dt*
 - `RATE_CALCULATE`: *dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)dt*
-- `FINITE_ASSIGN`: *X(n+1) := x_new, dX(n+1) = (X(n+1)-X(n))/dt*
 - `FINITE_CALCULATE`: *X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt*
 
 Class `DefaultSchema` implements (abstract methods of `AbstractSchema`) a plain first order numerical schema over `StateMeasure`.
@@ -56,7 +54,7 @@ State has only one `basis` object so any tensor measures are linked to the same 
 Any class inherited from class `State` is a material model contains array of `measure`'s, logic of any neccesary calculation and `Relation` links two `measure`'s. 
 
 # Relation
-Class `Relation` implements relationship between two arbitrary object inherited from `DefaultSchema`.
+Class `Relation` implements relationship between two arbitrary object inherited from `DefaultSchema`. All relation have rate and finite implementation and may be used in mix.
 
 ## Base Elastic Relation
 `ElasticRelation` inherited from `Relation` and implements relationship between `CaushyStress` and `GradDeform` in any combination.
@@ -64,3 +62,8 @@ There are two relations:
 - `HypoElasticRelation` inherited from `ElasticRelation` and implements relationship between `CaushyStress` and lagrangian strain tensor (derived from `GradDeform`)
 - `HyperElasticRelation` inherited from `ElasticRelation` and implements relationship between `CaushyStress` and spatial velocity gradient (derived from rate of `GradDeform`)
 
+## Inelastic (plastic) Relation
+In fact there is no specific Relation like `HypoElasticRelation`/`HyperElasticRelation` due to describe plastic behavior. Instead of it there is used `GradDeformInelast` measure that describes how Plastic part will be calculated.
+
+## Strain decomposition
+The same as for Inelastic Relation. There is used `GradDeformElast`measure that describes how elastic part is extracted from full and plastic measure.
