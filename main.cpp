@@ -106,6 +106,16 @@ int main()
 			std::cout << "Result of hypoplastic model \n";
 			std::cout << plasticity;
 		}
+		{
+			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
+			auto plasticity = model::Plasticity<strain::GradDeform, stress::CaushyStress, strain::GradDeformInelast, strain::GradDeformElast>(std::move(Q), numerical_schema::type_schema::FINITE_CALCULATE);
+			std::cout << plasticity;
+			for (size_t i = 0; i < 10000; i++) {
+				plasticity.step(1e-5);
+			}
+			std::cout << "Result of hyperplastic model \n";
+			std::cout << plasticity;
+		}
 	}
 	return 0;
 }

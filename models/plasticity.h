@@ -45,17 +45,21 @@ namespace measure {
 		// assignment a new rate L_in
 		template<typename T>
 		void measure::strain::GradDeformInelast<T>::rate_equation() {
-			auto& L = this->rate_temp;
-			L.fill_value(tens::FILL_TYPE::INDENT);
-			L *= 0.9;
+			const auto& L = (*this)[measure::strain::DEFORM_GRADIENT].rate();
+			auto iS = (*this)[measure::stress::CAUCHY].value_intensity();
+			auto& L_in = this->rate_temp = L;
+			T threshold = 0.014;
+			iS > threshold ? L_in : L_in *= (iS / threshold);
 		}
 
 		// assignment a new value F_in
 		template<typename T>
 		void measure::strain::GradDeformInelast<T>::finit_equation(T t) {
-			auto& F = this->value_temp;
-			F.fill_value(tens::FILL_TYPE::INDENT);
-			F *= t;
+			const auto& F = (*this)[measure::strain::DEFORM_GRADIENT].value();
+			auto iS = (*this)[measure::stress::CAUCHY].value_intensity();
+			auto& F_in = this->value_temp = F;
+			T threshold = 0.014;
+			iS > threshold ? F_in : F_in = IDENT_MATRIX<T> + (F - IDENT_MATRIX<T>) * (iS / threshold);
 		};
 
 		// assignment a new rate L_e

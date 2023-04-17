@@ -11,12 +11,12 @@ namespace measure {
 		// see https://en.wikipedia.org/wiki/Finite_strain_theory for more information
 		template<typename T = double>
 		class GradDeform : public StateMeasure<T> {
-			tens::container<T> E;  //  (Ft*F-I)/2
+			// tens::container<T> E;  //  (Ft*F-I)/2
 			tens::container<T> dE; //  dE/dt = Ft*(L+Lt)*F/2
 		public:
 			GradDeform(State<T>& state, const std::string& name = DEFORM_GRADIENT) :
 				StateMeasure<T>(state, 3, 2, name, tens::FILL_TYPE::INDENT), 
-				 E(3, 2, tens::FILL_TYPE::ZERO),
+				 // E(3, 2, tens::FILL_TYPE::ZERO),
 				dE(3, 2, tens::FILL_TYPE::ZERO) {};
 
 			// calc a new value F
@@ -41,6 +41,16 @@ namespace measure {
 			virtual void finit_equation(T t) override;
 
 			// ---------------------------------- helper functions ----------------------------------------
+			virtual T rate_intensity() const override {
+				const auto& L = this->rate();
+				return std::sqrt(2*convolution_transp(L, L)/3);
+			}
+
+			virtual T value_intensity() const override {
+				const auto E = lagrangian_strain_tensor();
+				return std::sqrt(2 * convolution_transp(E, E) / 3);
+			}
+
 			std::pair<tens::container<T>, tens::container<T>> polar_decomposition() {
 				const auto& F = this->value();
 				auto V = left_stretch_tensor(); 
@@ -55,7 +65,7 @@ namespace measure {
 			}
 			// V the right stretch tensor
 			tens::container<T> left_stretch_tensor() {
-				return func(right_cauchy_green(), sqrt); // sqrt(F.Ft)
+				return func(right_cauchy_green(), std::sqrt); // sqrt(F.Ft)
 			}
 
 			// The left Cauchy–Green deformation tensor, F.Ft
@@ -65,14 +75,13 @@ namespace measure {
 			}
 			// U the left stretch tensor
 			tens::container<T> right_stretch_tensor() {
-				return func(left_cauchy_green(), sqrt); // sqrt(Ft.F)
+				return func(left_cauchy_green(), std::sqrt); // sqrt(Ft.F)
 			}
 
 			//  (Ft*F-I)/2
-			const tens::container<T>& lagrangian_strain_tensor() {
-				E = this->value_temp;
+			const tens::container<T> lagrangian_strain_tensor() const {
 				const auto& F = this->value();
-				E = F.transpose(); // F
+				auto E = F.transpose(); // F
 				E *= F; // Ft*F
 				E -= IDENT_MATRIX<T>;
 				return E *= T(0.5);

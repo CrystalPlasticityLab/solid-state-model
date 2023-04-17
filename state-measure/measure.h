@@ -105,6 +105,11 @@ namespace measure {
 		// update_value() uses this->value_temp value as a new one (for more info see declaration)
 		virtual void finit_equation(T t) = 0;
 
+
+		virtual T rate_intensity() const = 0;
+
+		virtual T value_intensity() const = 0;
+
 		// the first order schema to calculate rate, may be overriden
 		// use reference this->rate_temp() for temporary calculation to prevent a new allocation
 		// update_rate() uses this->rate_temp value as a new one (for more info see declaration)

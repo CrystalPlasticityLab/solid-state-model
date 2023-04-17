@@ -18,6 +18,16 @@ namespace measure {
 
 			// evolution equation in finite form
 			virtual void finit_equation(T t) override {};
+
+			virtual T rate_intensity() const override {
+				const auto& dS = this->rate();
+				return std::sqrt(3 * convolution_transp(dS, dS) / 2);
+			}
+
+			virtual T value_intensity() const override {
+				const auto& S = this->value();
+				return std::sqrt(3 * convolution_transp(S, S) / 2);
+			}
 		};
 	}
 };

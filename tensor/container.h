@@ -410,6 +410,17 @@ namespace tens {
 			}
 			throw NoImplemetationYet();
 		}
+		// lhs : rhsT
+		friend T convolution_transp(const container<T>& lhs, const container<T>& rhs) {
+#ifdef _DEBUG
+			lhs.is_consist(rhs);
+#endif
+			if (lhs.rank() == 2 && lhs.dim() == 3) {
+				return math::dim3::mat_conv_transp(lhs.get(), rhs.get());
+			}
+			throw NoImplemetationYet();
+		}
+
 		// lhs * rhsT
 		friend  container<T> mat_scal_mat_transp(const  container<T>& lhs, const  container<T>& rhs) {
 #ifdef _DEBUG
