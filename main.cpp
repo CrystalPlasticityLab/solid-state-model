@@ -9,15 +9,14 @@
 #include "./state-measure/scalar.h"
 #include "./state-measure/strain.h"
 #include "./state-measure/stress.h"
-#include "./models/elasticity.h"
-#include "./models/plasticity.h"
+#include "./models/factory.h"
 
 const size_t DIM = 3;
 std::random_device rd;  // Will be used to obtain a seed for the random number engine
 std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
 extern std::uniform_real_distribution<double> unidistr = std::uniform_real_distribution<double>((double)0, (double)1);
 
-numerical_schema::type_schema numerical_schema::DEFAULT_NUMERICAL_SCHEMA = numerical_schema::type_schema::RATE_CALCULATE;
+measure::type_schema measure::DEFAULT_NUMERICAL_SCHEMA = measure::type_schema::RATE_CALCULATE;
 int main() 
 {
 #ifdef _DEBUG
@@ -76,19 +75,21 @@ int main()
 		t1 = t2 * t2;
 		t1 = t2 * 2.0;
 		
+		Json::Value params;
+		
 		{
 			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto elasticity = model::Elasticity<strain::GradDeform>(std::move(Q), numerical_schema::type_schema::RATE_CALCULATE);
+			auto elasticity = model::Elasticity<strain::GradDeform>(params, measure::type_schema::RATE_CALCULATE);
 			std::cout << elasticity;
-			for (size_t i = 0; i < 1000; i++) {
-				elasticity.step(1e-4);
+			for (size_t i = 0; i < 10000; i++) {
+				elasticity.step(1e-5);
 			}
 			std::cout << "Result of hypoelasic model \n";
 			std::cout << elasticity;
 		}
 		{
 			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto elasticity = model::Elasticity<strain::GradDeform>(std::move(Q), numerical_schema::type_schema::FINITE_CALCULATE);
+			auto elasticity = model::Elasticity<strain::GradDeform>(params, measure::type_schema::FINITE_CALCULATE);
 			std::cout << elasticity;
 			for (size_t i = 0; i < 10000; i++) {
 				elasticity.step(1e-5);
@@ -98,7 +99,7 @@ int main()
 		}
 		{
 			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto plasticity = model::Plasticity<strain::GradDeform, stress::CaushyStress, strain::GradDeformInelast, strain::GradDeformElast>(std::move(Q), numerical_schema::type_schema::RATE_CALCULATE);
+			auto plasticity = model::Plasticity<strain::GradDeform, stress::CaushyStress>(params, measure::type_schema::RATE_CALCULATE);
 			std::cout << plasticity;
 			for (size_t i = 0; i < 10000; i++) {
 				plasticity.step(1e-5);
@@ -108,7 +109,7 @@ int main()
 		}
 		{
 			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto plasticity = model::Plasticity<strain::GradDeform, stress::CaushyStress, strain::GradDeformInelast, strain::GradDeformElast>(std::move(Q), numerical_schema::type_schema::FINITE_CALCULATE);
+			auto plasticity = model::Plasticity<strain::GradDeform, stress::CaushyStress>(params, measure::type_schema::FINITE_CALCULATE);
 			std::cout << plasticity;
 			for (size_t i = 0; i < 10000; i++) {
 				plasticity.step(1e-5);

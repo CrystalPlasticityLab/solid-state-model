@@ -4,7 +4,7 @@
 
 namespace state {
 	template<typename T>
-	class State;
+	class MaterialPoint;
 };
 
 namespace numerical_schema {
@@ -72,20 +72,14 @@ namespace numerical_schema {
 		};
 	};
 
-	enum class type_schema {
-		RATE_CALCULATE, // dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)*dt
-		FINITE_CALCULATE // X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt
-	};
-
-	extern type_schema DEFAULT_NUMERICAL_SCHEMA;
 
 	template <typename T>
 	class DefaultSchema : public std::unique_ptr<measure::StateMeasure<T>>, protected AbstractSchema<T> {
-		type_schema _type;
+		measure::type_schema _type;
 		int _key = 0;
 	protected:
 	public:
-		DefaultSchema(type_schema type,
+		DefaultSchema(measure::type_schema type,
 			std::unique_ptr<measure::StateMeasure<T>> &&measure) :
 			_type(type),
 			std::unique_ptr<measure::StateMeasure<T>>(std::move(measure)) {
@@ -100,14 +94,14 @@ namespace numerical_schema {
 #endif
 			switch (_type)
 			{
-			case numerical_schema::type_schema::RATE_CALCULATE:
-				measure.rate_equation();
+			case measure::type_schema::RATE_CALCULATE:
+				measure.rate_equation(AbstractSchema<T>::_t, dt);
 				measure.update_rate();
 				measure.integrate_value(dt);
 				measure.update_value();
 				break;
-			case numerical_schema::type_schema::FINITE_CALCULATE:
-				measure.finit_equation(AbstractSchema<T>::_t);
+			case measure::type_schema::FINITE_CALCULATE:
+				measure.finite_equation(AbstractSchema<T>::_t, dt);
 				measure.update_value();
 				measure.calc_rate(dt);
 				measure.update_rate();
@@ -126,8 +120,10 @@ namespace numerical_schema {
 #endif
 		};
 
-		void set_numerical_schema(numerical_schema::type_schema type) {
+		void set_numerical_schema(measure::type_schema type) {
 			_type = type;
 		}
 	};
+
+
 };

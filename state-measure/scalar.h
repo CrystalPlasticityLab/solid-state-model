@@ -10,13 +10,13 @@ namespace measure {
 		template<typename T>
 		class Scalar : public StateMeasure<T> {
 		public:
-			Scalar(State<T>& state, size_t dim) : StateMeasure<T>(state, dim, 0, SCALAR_ARRAY, tens::FILL_TYPE::ZERO) {};
+			Scalar(MaterialPoint<T>& state, size_t dim) : StateMeasure<T>(state, dim, 0, SCALAR_ARRAY, tens::FILL_TYPE::ZERO) {};
 
 			virtual void rate_equation() override {
 				this->rate_temp.fill_value(1.0);
 			}
 
-			virtual void finit_equation(T t) override {
+			virtual void finite_equation(T t) override {
 			};
 		};
 	};

@@ -10,91 +10,41 @@
 namespace state {
 	using namespace measure;
 	using namespace numerical_schema;
-	struct StringHasher {
-		std::hash<std::string> hasher;
-		size_t operator()(const std::string& t) const {
-			return hasher(t);
-		}
-	};
 
-	template<typename T>
-	class StateBase : public std::unordered_map<const std::string, std::shared_ptr<DefaultSchema<T>>, StringHasher> {
-		StateBase& operator = (const StateBase&) = delete;
-		StateBase& operator = (StateBase&&) noexcept = delete;
-		StateBase(const StateBase&) = delete;
-		StateBase(StateBase&&) noexcept = delete;
-	public:
-		StateBase() {};
-	};
-
-
-	template<typename T>
-	class State : public std::shared_ptr<StateBase<T>>, public AbstractSchema<T> {
+	/*
+		Base class of Material Point with basis
+	*/
+	template<class T = double>
+	class MaterialPoint : public AbstractSchema<T> {
 		Basis<T> _basis;
-		T _dt;
-		template<template<class> class P, class T>
-		std::shared_ptr<DefaultSchema<T>>& link(P<T>&& obj) {
-			const auto& name = obj->name();
-			if ((*this)->find(name) == (*this)->end()) {
-				(*this)->insert({ name, std::make_unique<P<T>>(std::forward<P<T>>(obj)) });
-			};
-			return (*(*this))[name];
-		}
 	protected:
-		StateBase<T>& state;
-		template<template<class> class Q, class T>
-		std::shared_ptr<DefaultSchema<T>>& add(numerical_schema::type_schema type_schema = numerical_schema::DEFAULT_NUMERICAL_SCHEMA) {
-			return this->link(
-				numerical_schema::DefaultSchema<T>(
-					type_schema,
-					std::make_unique<Q<T>>(Q<T>(*this)))
-			);
-		}
-
-		template<template<class> class Q, class T, size_t N>
-		std::shared_ptr<DefaultSchema<T>>& add(numerical_schema::type_schema type_schema = numerical_schema::DEFAULT_NUMERICAL_SCHEMA) {
-			this->link(
-				numerical_schema::DefaultSchema<T>(
-					type_schema,
-					std::make_unique<Q<T>>(Q<T>(*this, N)))
-			);
-		}
+		std::shared_ptr<Json::Value> _params;
+		virtual void parse_json_params(const Json::Value& params) {};
 	public:
-		State(Basis<T>&& basis) : 
-			std::shared_ptr<StateBase<T>>(std::make_shared<StateBase<T>>()), 
-			_basis(std::move(basis)),
-			_dt(0), state(*(*this)) {
+		virtual void init() override {};
+		virtual void calc(T dt) override {};
+		virtual void finalize()  override {};
+		MaterialPoint(const Json::Value& params, measure::type_schema type) :
+			_basis(tens::create_basis<T, 3>(tens::DEFAULT_ORTH_BASIS::RANDOM))
+		{
 		};
-
 		const Basis<T>& basis() {
 			return _basis;
 		}
-		virtual void init() override {
-			for (auto& obj : **this) {
-				obj.second->init();
-			}
-		};
 
-		virtual void finalize() override {
-			for (auto& obj : **this) {
-				obj.second->finalize();
-			}
-			AbstractSchema<T>::_t += _dt;
-		};
-
+		const std::shared_ptr<const Json::Value>& param() const {
+			return _params;
+		}
 		template<typename T>
-		friend std::ostream& operator<< (std::ostream& o, const State<T>& b);
+		friend std::ostream& operator<< (std::ostream& o, const MaterialPoint<T>& b);
+
+		virtual std::ostream& print_measures(std::ostream& o) const = 0;
 	};
 
 	template<typename T>
-	std::ostream& operator<<(std::ostream& out, const State<T>& b) {
+	std::ostream& operator<<(std::ostream& out, const MaterialPoint<T>& b) {
 		out << "Basis    : " << *b._basis << std::endl;
-		out << "Measures : \n";
-		for (const auto& obj : *b) {
-			const auto& value = (*obj.second)->value();
-			const auto& rate = (*obj.second)->rate();
-			out << " - " << obj.first << ": value = " << value << ", rate = " << rate << std::endl;
-		}
+		b.print_measures(out);
 		return out;
 	};
 }

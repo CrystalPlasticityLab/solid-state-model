@@ -1,10 +1,13 @@
 #pragma once
+#include "../json/json/json.h"
 
-//#include "schema.h"
 namespace state {
 	template<typename T>
-	class State;
+	class MaterialPoint;
 };
+
+namespace numerical_schema {
+}
 
 namespace measure {
 	using namespace state;
@@ -17,6 +20,12 @@ namespace measure {
 			};
 		};
 	}
+
+	enum class type_schema {
+		RATE_CALCULATE, // dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)*dt
+		FINITE_CALCULATE // X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt
+	};
+	extern type_schema DEFAULT_NUMERICAL_SCHEMA;
 
 	template<template<class> class Q, class T>
 	class AbstractMeasure {
@@ -97,14 +106,13 @@ namespace measure {
 		// rate must be updated by calling update_rate
 		// use reference this->rate_temp() for temporary calculation to prevent a new allocation
 		// update_rate() uses this->rate_temp value as a new one (for more info see declaration)
-		virtual void rate_equation() = 0;
+		virtual void rate_equation(T t, T dt) = 0;
 
 		// evolution equation in finite form
 		// value must be updated by calling update_value
 		// use reference this->value_temp() for temporary calculation to prevent a new allocation
 		// update_value() uses this->value_temp value as a new one (for more info see declaration)
-		virtual void finit_equation(T t) = 0;
-
+		virtual void finite_equation(T t, T dt) = 0;
 
 		virtual T rate_intensity() const = 0;
 
@@ -138,17 +146,39 @@ namespace measure {
 		return out;
 	};
 
-	template<typename T>
-	class StateMeasure : public tens::object<T>, public AbstractMeasure<tens::container, T> {
-		const State<T>& _state;
+
+	template <typename T>
+	class AbstractSchema_ {
+	protected:
+		T _t = 0;
 	public:
-		StateMeasure(State<T>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type = tens::FILL_TYPE::ZERO) :
+		virtual void init() = 0;
+		virtual void calc(T dt) = 0;
+		virtual void finalize() = 0;
+		void inc_time(T dt) {
+			_t += dt;
+		}
+		T t() { return _t; };
+		virtual void step(T dt) {
+			init();
+			calc(dt);
+			finalize();
+		};
+	};
+
+
+	template< typename T>
+	class StateMeasure : public tens::object<T>, public AbstractMeasure<tens::container, T> {
+		const MaterialPoint<T>& _state;
+	public:
+		StateMeasure(MaterialPoint<T>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type = tens::FILL_TYPE::ZERO) :
 			tens::object<T>(dim, rank, type, state.basis()),
 			_state(state),
 			AbstractMeasure<tens::container, T>(
 				name,
 				this->comp(), // link ref
-				tens::container<T>(dim, rank, tens::FILL_TYPE::ZERO)) {
+				tens::container<T>(dim, rank, tens::FILL_TYPE::ZERO))
+		{
 		};
 
 		// TODO: looks like a bit weird -> fix
@@ -166,6 +196,68 @@ namespace measure {
 		const StateMeasure<T>& operator[] (const std::string& name) const {
 			_state.get() ? false : new error::StateNotLinked();
 			return **(*_state.get())[name];
+		}
+
+		const std::shared_ptr<const Json::Value>& param() const {
+			return _state.param();
+		}
+	};
+	
+
+	// enum class measure::type_schema {
+	// 	RATE_CALCULATE, // dX(n+1) := F(...), X(n+1) = X(n) + dX(n+1)*dt
+	// 	FINITE_CALCULATE // X(n+1) := G(...), dX(n+1) = (X(n+1)-X(n))/dt
+	// };
+
+	template< typename T, template<class> class Schema = AbstractSchema_>
+	class StateMeasureSchema : public StateMeasure<T>, public Schema<T> {
+		StateMeasure<T>& measure;
+	protected:
+		const measure::type_schema _type;
+	public:
+		StateMeasureSchema(MaterialPoint<T>& state, size_t dim, size_t rank, std::string name, tens::FILL_TYPE type, measure::type_schema type_schema = measure::type_schema::RATE_CALCULATE) :
+			StateMeasure<T>(state, dim, rank, name, type),
+			Schema<T>(),
+			measure(*this),
+			_type(type_schema)
+		{
+		};
+
+		virtual void init() {};
+
+		virtual void calc(T dt) {
+#ifdef _DEBUG
+			//_key = measure.lock();
+#endif
+			switch (_type)
+			{
+			case measure::type_schema::RATE_CALCULATE:
+				measure.rate_equation(AbstractSchema_<T>::_t, dt);
+				measure.update_rate();
+				measure.integrate_value(dt);
+				measure.update_value();
+				break;
+			case measure::type_schema::FINITE_CALCULATE:
+				measure.finite_equation(AbstractSchema_<T>::_t, dt);
+				measure.update_value();
+				measure.calc_rate(dt);
+				measure.update_rate();
+				break;
+			default:
+				//throw new error::UndefinedNumericalSchema();
+				break;
+			}
+			AbstractSchema_<T>::inc_time(dt);
+		};
+
+		virtual void finalize() override {
+#ifdef _DEBUG
+			//measure.unlock(_key);
+#endif
+		};
+
+		void set_numerical_schema(measure::type_schema type) {
+			_type = type;
 		}
 	};
 };
