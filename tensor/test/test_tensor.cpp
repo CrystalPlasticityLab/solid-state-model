@@ -14,7 +14,7 @@ void test_tensor(){
     using namespace tens;
 
     std::cout << " =================== Start testing Tensor ===================" << std::endl;
-    const auto gl = GLOBAL_BASIS<double>;
+    const auto gl = GLOBAL_BASIS<double, 3>;
     int all_tests = 0;
     int pass_tests = 0;
     const auto m_I = Matrix<double, 3>(FILL_TYPE::INDENT);
@@ -142,16 +142,16 @@ void test_tensor(){
         all_tests++;
     }
     {
-        const auto sm = container<double>(3, 2, FILL_TYPE::RANDOMSYMM);
-        const auto ref_obj = object<double>(sm, gl);
+        const auto sm = container<double, 3, 2>(FILL_TYPE::RANDOMSYMM);
+        const auto ref_obj = object<double, 3, 2>(sm, gl);
         const auto eig_obj = eigen_object(sm);
         pass_tests += expect((ref_obj == eig_obj), "eigen test");
         all_tests++;
     }
     {
-        auto I2 = IDENT_MATRIX<double> * 2.0;
+        auto I2 = IDENT_MATRIX<double, 3> * 2.0;
 
-        auto I2sqrt = func(I2, sqrt) - (IDENT_MATRIX<double> * sqrt(2.0));
+        auto I2sqrt = func(I2, sqrt) - (IDENT_MATRIX<double, 3> * sqrt(2.0));
         auto err = I2sqrt.trace();
         pass_tests += expect(math::is_small_value(err), "func of matrix test #1");
         all_tests++;

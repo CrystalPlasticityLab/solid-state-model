@@ -23,7 +23,7 @@ int main()
 	std::cout << " ------------------------------ Running in DEBUG mode --------------------------- \n";
 #endif
 
-	const auto gl = GLOBAL_BASIS<double>;
+	const auto gl = GLOBAL_BASIS<double, 3>;
 	//try 
 	{
 		using namespace measure;
@@ -36,18 +36,18 @@ int main()
 		const auto type = typeid(std::array<double, 10>).name();
 		auto xmap = static_cast<std::array<double, 10>*>(map[5]);
 		using namespace tens;
-		const auto qwew = container<double>(30, 0);
+		const auto qwew = container<double, 30, 1>(0.0);
 		//func(qwew, sqrt);
-		//run_test();
+		run_test();
 		//const auto yy = container<double>(30, 2, std::move(std::unique_ptr<double>(arr)));
-		const auto xx = container<double>(30, 0);
-		auto scalar = container<double>(1, 1, 0.4534535);
-		auto scalar_array = container<double>(10, 2, 0.4534535);
-		auto scalar_array1 = object<double>(10, 0, FILL_TYPE::RANDOM);
-		auto scalar_array2 = object<double>(10, 0, FILL_TYPE::RANDOM);
-		scalar_array2 += scalar_array1;
-		const auto scal(scalar_array2);
-		double value = scalar;
+		//const auto xx = container<double>(30, 0);
+		//auto scalar = container<double>(1, 1, 0.4534535);
+		//auto scalar_array = container<double>(10, 2, 0.4534535);
+		//auto scalar_array1 = object<double>(10, 0, FILL_TYPE::RANDOM);
+		//auto scalar_array2 = object<double>(10, 0, FILL_TYPE::RANDOM);
+		//scalar_array2 += scalar_array1;
+		//const auto scal(scalar_array2);
+		//double value = scalar;
 
 		auto object = create_basis<double, 3>();
 		const auto b1 = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
@@ -106,17 +106,19 @@ int main()
 			}
 			std::cout << "Result of hypoplastic model \n";
 			std::cout << plasticity;
-		}
+		}/*
 		{
 			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
 			auto plasticity = model::Plasticity<strain::GradDeform, stress::CaushyStress>(params, measure::type_schema::FINITE_CALCULATE);
 			std::cout << plasticity;
 			for (size_t i = 0; i < 10000; i++) {
 				plasticity.step(1e-5);
+				//if (i > 9000)
+				//std::cout << plasticity;
 			}
 			std::cout << "Result of hyperplastic model \n";
 			std::cout << plasticity;
-		}
+		}*/
 	}
 	return 0;
 }

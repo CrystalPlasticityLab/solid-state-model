@@ -11,7 +11,7 @@ namespace model {
 	protected:
 		std::shared_ptr<const StrainMeasure<T>> F_e;
 	public:
-		ElasticRelation(measure::type_schema type, MaterialPoint<T>& state, 
+		ElasticRelation(measure::type_schema type, MaterialPoint<T, 3>& state, 
 			const std::shared_ptr<const StrainMeasure<T>>& _F_e) :
 			StressMeasure<T>(state, type),
 			F_e(_F_e) 
@@ -39,7 +39,7 @@ namespace model {
 		std::shared_ptr<const StressMeasure<T>> S;
 		std::shared_ptr<const StrainMeasure<T>> F;
 	public:
-		PlasticRelation(measure::type_schema type, MaterialPoint<T>& state, 
+		PlasticRelation(measure::type_schema type, MaterialPoint<T, 3>& state, 
 			const std::shared_ptr<const StressMeasure<T>> _S, 
 			const std::shared_ptr<const StrainMeasure<T>> _F) :
 			StrainMeasure<T>(state, type, "F_in"),
@@ -58,9 +58,15 @@ namespace model {
 		virtual void finite_equation(T t, T dt) override {
 			const auto& F = this->F->value();
 			auto iS = S->value_intensity();
-			auto& F_in = this->value_temp = F;
+			auto& F_in = this->value_temp;// = F;
 			T threshold = 0.014;
-			iS > threshold ? F_in : F_in = IDENT_MATRIX<T> + (F - IDENT_MATRIX<T>) * (iS / threshold);
+			if (iS > threshold) {
+				F_in = F;
+			} else {
+				F_in = (this->value() * 90.0 + IDENT_MATRIX<T, 3> + F * (iS / threshold))/91.0;
+				//F_in = tens::func(IDENT_MATRIX<T> + F * (iS / threshold), sqrt);
+			}
+			//iS > threshold ? F_in : F_in = IDENT_MATRIX<T> + (F - IDENT_MATRIX<T>) * (iS / threshold);
 		};
 	};
 
@@ -70,7 +76,7 @@ namespace model {
 		std::shared_ptr<const StrainMeasure<T>> F;
 		std::shared_ptr<const StrainMeasure<T>> F_in;
 	public:
-		StrainDecomposition(measure::type_schema type, MaterialPoint<T>& state, 
+		StrainDecomposition(measure::type_schema type, MaterialPoint<T, 3>& state, 
 			const std::shared_ptr<const StrainMeasure<T>> _F, 
 			const std::shared_ptr<const StrainMeasure<T>> _F_in) :
 			StrainMeasure<T>(state, type, "F_e"),

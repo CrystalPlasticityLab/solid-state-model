@@ -3,7 +3,7 @@
 #include "../state-measure/measure.h"
 
 namespace state {
-	template<typename T>
+	template<typename T, size_t DIM>
 	class MaterialPoint;
 };
 
@@ -72,9 +72,9 @@ namespace numerical_schema {
 		};
 	};
 
-
+	/*
 	template <typename T>
-	class DefaultSchema : public std::unique_ptr<measure::StateMeasure<T>>, protected AbstractSchema<T> {
+	class DefaultSchema : public std::unique_ptr<measure::StateMeasure<T, DIM, RANK>>, protected AbstractSchema<T> {
 		measure::type_schema _type;
 		int _key = 0;
 	protected:
@@ -124,6 +124,7 @@ namespace numerical_schema {
 			_type = type;
 		}
 	};
+	*/
 
 
 };

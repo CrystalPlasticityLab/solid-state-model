@@ -15,12 +15,12 @@ namespace model {
 	template<
 		template<class> class StrainMeasure = strain::GradDeform, 
 		template<class> class StressMeasure = stress::CaushyStress, class T = double>
-	class Elasticity : public MaterialPoint<T> {
+	class Elasticity : public MaterialPoint<T, 3> {
 	protected:
 		std::shared_ptr<StrainMeasure<T>> F;
 		std::shared_ptr<StressMeasure<T>> S;
 		void parse_json_params(const Json::Value& params) {
-			MaterialPoint<T>::parse_json_params(params);
+			MaterialPoint<T, 3>::parse_json_params(params);
 		}
 
 		void reset_elastic_strain_measure(std::shared_ptr<const StrainMeasure<T>> new_F) {
@@ -28,7 +28,7 @@ namespace model {
 		}
 	public:
 		Elasticity(const Json::Value& params, measure::type_schema type) : 
-			MaterialPoint<T>(params, type),
+			MaterialPoint<T, 3>(params, type),
 			F(std::make_shared<StrainMeasure<T>>(*this, type)),
 			S(std::make_shared<ElasticRelation<StressMeasure, StrainMeasure, T>>(type, *this, this->F))
 		{
@@ -51,15 +51,15 @@ namespace model {
 namespace measure {
 	namespace strain {
 		// assignment a new rate L
-		template<typename T>
-		void measure::strain::GradDeform<T>::rate_equation(T t, T dt) {
+		template<typename T, size_t DIM>
+		void measure::strain::GradDeform<T, DIM>::rate_equation(T t, T dt) {
 			auto& L = this->rate_temp;
 			L.fill_value(tens::FILL_TYPE::INDENT);
 		}
 
 		// assignment a new value F 
-		template<typename T>
-		void measure::strain::GradDeform<T>::finite_equation(T t, T dt) {
+		template<typename T, size_t DIM>
+		void measure::strain::GradDeform<T, DIM>::finite_equation(T t, T dt) {
 			auto& F = this->value_temp;
 			F.fill_value(tens::FILL_TYPE::INDENT);
 			F *= T(1) + t;

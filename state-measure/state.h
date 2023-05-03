@@ -14,9 +14,9 @@ namespace state {
 	/*
 		Base class of Material Point with basis
 	*/
-	template<class T = double>
+	template<class T, size_t DIM>
 	class MaterialPoint : public AbstractSchema<T> {
-		Basis<T> _basis;
+		Basis<T, DIM> _basis;
 	protected:
 		std::shared_ptr<Json::Value> _params;
 		virtual void parse_json_params(const Json::Value& params) {};
@@ -28,21 +28,21 @@ namespace state {
 			_basis(tens::create_basis<T, 3>(tens::DEFAULT_ORTH_BASIS::RANDOM))
 		{
 		};
-		const Basis<T>& basis() {
+		const Basis<T, DIM>& basis() {
 			return _basis;
 		}
 
 		const std::shared_ptr<const Json::Value>& param() const {
 			return _params;
 		}
-		template<typename T>
-		friend std::ostream& operator<< (std::ostream& o, const MaterialPoint<T>& b);
+		template<typename T, size_t DIM>
+		friend std::ostream& operator<< (std::ostream& o, const MaterialPoint<T, DIM>& b);
 
 		virtual std::ostream& print_measures(std::ostream& o) const = 0;
 	};
 
-	template<typename T>
-	std::ostream& operator<<(std::ostream& out, const MaterialPoint<T>& b) {
+	template<typename T, size_t DIM>
+	std::ostream& operator<<(std::ostream& out, const MaterialPoint<T, DIM>& b) {
 		out << "Basis    : " << *b._basis << std::endl;
 		b.print_measures(out);
 		return out;

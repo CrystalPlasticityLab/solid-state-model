@@ -10,20 +10,20 @@ namespace measure {
 
 		// Deformation gradient tensor
 		// see https://en.wikipedia.org/wiki/Finite_strain_theory for more information
-		template<typename T = double>
-		class GradDeform : public StateMeasureSchema<T> {
-			const std::shared_ptr<tens::container<T>> E;  //  (Ft*F-I)/2
-			const std::shared_ptr<tens::container<T>> dE; //  dE/dt = Ft*(L+Lt)*F/2
+		template<typename T, size_t DIM = 3>
+		class GradDeform : public StateMeasureSchema<T, 3, 2> {
+			const std::shared_ptr<tens::container<T, 3, 2>> E;  //  (Ft*F-I)/2
+			const std::shared_ptr<tens::container<T, 3, 2>> dE; //  dE/dt = Ft*(L+Lt)*F/2
 		public:
-			GradDeform(MaterialPoint<T>& state, measure::type_schema type_schema, const std::string& name = DEFORM_GRADIENT) :
-				StateMeasureSchema<T>(state, 3, 2, name, tens::FILL_TYPE::INDENT, type_schema),
-				 E(std::make_shared<tens::container<T>>(3, 2, tens::FILL_TYPE::ZERO)),
-				dE(std::make_shared<tens::container<T>>(3, 2, tens::FILL_TYPE::ZERO)) {};
+			GradDeform(MaterialPoint<T, DIM>& state, measure::type_schema type_schema, const std::string& name = DEFORM_GRADIENT) :
+				StateMeasureSchema<T, DIM, 2>(state, name, tens::FILL_TYPE::INDENT, type_schema),
+				 E(std::make_shared<tens::container<T, DIM, 2>>(tens::FILL_TYPE::ZERO)),
+				dE(std::make_shared<tens::container<T, DIM, 2>>(tens::FILL_TYPE::ZERO)) {};
 
 			// calc a new value F
 			virtual void integrate_value(T dt) override {
 				auto& df = this->value_temp = this->rate();
-				(df *= -dt) += IDENT_MATRIX<T>; // I - L*dt
+				(df *= -dt) += IDENT_MATRIX<T, 3>; // I - L*dt
 				inverse(df); // (I - L * dt)^-1 * F
 				df *= this->value();
 			};
@@ -32,7 +32,7 @@ namespace measure {
 			virtual void calc_rate(T dt) override {
 				auto& L = this->rate_temp = this->value_prev(); // fn_1
 				L *= this->value().inverse(); // fn_1 * fn^-1
-				(L -= IDENT_MATRIX<T>) /= (-dt); // (I - fn_1 * fn^-1)/ dt
+				(L -= IDENT_MATRIX<T, 3>) /= (-dt); // (I - fn_1 * fn^-1)/ dt
 			};
 
 			// assignment a new rate L
@@ -52,7 +52,7 @@ namespace measure {
 				return std::sqrt(2 * convolution_transp(E, E) / 3);
 			}
 
-			std::pair<tens::container<T>, tens::container<T>> polar_decomposition() const {
+			std::pair<tens::container<T, 3, 2>, tens::container<T, 3, 2>> polar_decomposition() const {
 				const auto& F = this->value();
 				auto V = left_stretch_tensor(); 
 				auto R = F * V.inverse();
@@ -60,35 +60,35 @@ namespace measure {
 			};
 
 			// The right Cauchy–Green deformation tensor, Ft.F
-			tens::container<T> right_cauchy_green() const {
+			tens::container<T, 3, 2> right_cauchy_green() const {
 				const auto& F = this->value();
 				return F * F.transpose();
 			}
 			// V the right stretch tensor
-			tens::container<T> left_stretch_tensor() const {
+			tens::container<T, 3, 2> left_stretch_tensor() const {
 				return func(right_cauchy_green(), std::sqrt); // sqrt(F.Ft)
 			}
 
 			// The left Cauchy–Green deformation tensor, F.Ft
-			tens::container<T> left_cauchy_green() {
+			tens::container<T, 3, 2> left_cauchy_green() {
 				const auto& F = this->value();
 				return F.transpose() * F;
 			}
 			// U the left stretch tensor
-			tens::container<T> right_stretch_tensor() const {
+			tens::container<T, 3, 2> right_stretch_tensor() const {
 				return func(left_cauchy_green(), std::sqrt); // sqrt(Ft.F)
 			}
 
 			//  (Ft*F-I)/2
-			const tens::container<T>& lagrangian_strain_tensor() const {
+			const tens::container<T, 3, 2>& lagrangian_strain_tensor() const {
 				const auto& F = this->value();
 				*E = F.transpose() * F; // F.Ft
-				*E -= IDENT_MATRIX<T>;
+				*E -= IDENT_MATRIX<T, 3>;
 				return *E *= T(0.5);
 			}
 		
 			//  dE/dt = Ft*(L+Lt)*F/2
-			const tens::container<T>& lagrangian_strain_rate_tensor() const {
+			const tens::container<T, 3, 2>& lagrangian_strain_rate_tensor() const {
 				const auto& F = this->value();
 				*dE = F.transpose();
 				*dE *= (this->rate().symmetrize() *= F);

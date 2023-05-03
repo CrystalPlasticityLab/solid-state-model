@@ -5,9 +5,6 @@ namespace model {
 	using namespace state;
 	using namespace measure;
 
-	template <typename T>
-	using pMeasure = std::shared_ptr<DefaultSchema<T>>;
-
 	/*
 		Base class for elasto-plastic behavior material, inherited from Elasticity
 		Plasticity<ElasticType, StrainMeasure>, where:
