@@ -40,7 +40,7 @@ namespace tens {
 
 	template<typename T, size_t DIM, size_t RANK = 2>
 	container<T, DIM, RANK> Matrix(const std::array<std::array<T, DIM>, DIM>& matrix) {
-		std::array<T, pow(DIM, RANK)> arr;// = std::unique_ptr<T[]>(new T[DIM * DIM]);
+		std::array<T, pow(DIM, RANK)> arr;
 		if (DIM == 3) {// ------- for DIM == 3 : {00, 11, 22, 12, 02, 01, 21, 20, 10} 
 			arr[0] = matrix[0][0];
 			arr[1] = matrix[1][1];
@@ -51,7 +51,7 @@ namespace tens {
 			arr[6] = matrix[2][1];
 			arr[7] = matrix[2][0];
 			arr[8] = matrix[1][0];
-			return container<T, DIM, RANK>(arr);// container<T, DIM, RANK>(std::move(arr));
+			return container<T, DIM, RANK>(arr);
 		}
 		throw new NoImplemetationYet();
 	}
@@ -68,9 +68,7 @@ namespace tens {
 
 	template<typename T, size_t DIM, size_t RANK = 1>
 	container<T, DIM, 1> Array(const std::array<T, DIM>& array) {
-		//std::unique_ptr<T[]> arr = std::unique_ptr<T[]>(new T[DIM]);
-		//memcpy(arr.data(), &array, DIM * sizeof(T));
-		return container<T, DIM, 1>(array);// std::move(arr));
+		return container<T, DIM, 1>(array);
 	}
 
 	container<double, 3, 2> generate_rand_ort();
@@ -81,9 +79,7 @@ namespace tens {
 	class container : public std::array<T, (size_t)pow(DIM, RANK)>
 	{
 	private:
-		//size_t DIM;
 		size_t _size;
-		//size_t RANK;
 
 		void _copy(const T* ptr) {
 			memcpy(this->data(), ptr, _size * sizeof(T));
@@ -106,15 +102,7 @@ namespace tens {
 		}
 
 	public:
-		//size_t dim()  const { return DIM; };
 		size_t size() const { return _size; };
-		//size_t rank() const { return RANK; };
-
-		//void is_consist(const container& c) const {
-		//	if (this->DIM != c.DIM || this->RANK != c.RANK) {
-		//		throw new ErrorMath::ShapeMismatch();
-		//	};
-		//};
 
 		void fill_rand() {
 			for (size_t i = 0; i < _size; ++i) {
@@ -157,8 +145,8 @@ namespace tens {
 			}
 		};
 
-		//container(std::unique_ptr<T[]>&& pointer) : std::unique_ptr<T[]>(std::move(pointer)), _size(RANK != 0 ? (size_t)pow(DIM, RANK) : DIM) {};
 		container() : std::array<T, pow(DIM, RANK)>(), _size(RANK != 0 ? (size_t)pow(DIM, RANK) : DIM) {};
+
 		container(const std::array<T, pow(DIM, RANK)>& arr) : std::array<T, pow(DIM, RANK)>(arr), _size(RANK != 0 ? (size_t)pow(DIM, RANK) : DIM) {};
 
 		container(FILL_TYPE type) : std::array<T, (size_t)pow(DIM, RANK)>(), _size(RANK != 0 ? (size_t)pow(DIM, RANK) : DIM) {
@@ -173,8 +161,7 @@ namespace tens {
 			_copy(c);
 		};
 
-		container(container&& c) noexcept : std::array<T, (size_t)pow(DIM, RANK)>(std::move(c)), _size(c._size) {
-		};
+		container(container&& c) noexcept : std::array<T, (size_t)pow(DIM, RANK)>(std::move(c)), _size(c._size) {};
 
 		operator T() const { 
 			if (_size == 1) {
@@ -391,50 +378,117 @@ namespace tens {
 		friend std::pair<container<T, DIM, RANK>, container<T, DIM, RANK>> eigen(const tens::container<T, DIM, RANK>& M);
 	};
 
+	template<typename T, size_t DIM>
+	void order_vectors(std::array<std::pair<tens::container<T, DIM, 1>, std::pair<T, size_t>>, DIM>& vectors) {
 
+	}
 	template<typename T, size_t DIM, size_t RANK>
 	std::pair<container<T, DIM, RANK>, container<T, DIM, RANK>> eigen(const tens::container<T, DIM, RANK>& M) {
 		// ------- for DIM == 3 : {00, 11, 22, 12, 02, 01, 21, 20, 10} 
-		if (DIM != 3 || RANK != 2) {
+#ifdef _DEBUG
+		if (DIM != 3) {
 			throw NoImplemetationYet();
 		}
+#endif
 		Eigen::Matrix3d m;
 		m << M[0], M[5], M[4], M[8], M[1], M[3], M[7], M[6], M[2];
 		auto es = Eigen::EigenSolver<Eigen::Matrix3d>(m, true);
 		const auto& l = es.eigenvalues();
 		const auto& v = es.eigenvectors();
-		tens::container<T, DIM, RANK> comp(FILL_TYPE::ZERO);
-		tens::container<T, DIM, RANK> vect(FILL_TYPE::ZERO);
+
+		tens::container<T, DIM, RANK> comp;
+		tens::container<T, DIM, RANK> basis;
+		std::array<
+			std::pair<tens::container<T, DIM, 1>, 
+			std::pair<T, size_t>
+			>, DIM> vectors;
+
 		comp[0] = l[0].real(); comp[1] = l[1].real(); comp[2] = l[2].real();
-		vect[0] = v(0).real(); vect[5] = v(1).real(); vect[4] = v(2).real();
-		vect[8] = v(3).real(); vect[1] = v(4).real(); vect[3] = v(5).real();
-		vect[7] = v(6).real(); vect[6] = v(7).real(); vect[2] = v(8).real();
-		return { comp , vect };
+		vectors[0].first[0] = v(0).real(); vectors[0].first[1] = v(1).real(); vectors[0].first[2] = v(2).real();
+		vectors[1].first[0] = v(3).real(); vectors[1].first[1] = v(4).real(); vectors[1].first[2] = v(5).real();
+		vectors[2].first[0] = v(6).real(); vectors[2].first[1] = v(7).real(); vectors[2].first[2] = v(8).real();
+
+		// ordering vectors: max element position is a number of basis vector
+		// step 1: calc max and pos of max
+		for (auto& v : vectors) {
+			auto max_iter = std::max_element(v.first.begin(), v.first.end());
+			auto min_iter = std::min_element(v.first.begin(), v.first.end());
+			T max_value = *max_iter;
+			T min_value = *min_iter;
+			v.second.first = fabs(max_value);
+			v.second.second = std::distance(v.first.begin(), max_iter);
+			if (fabs(min_value) > fabs(max_value)) {
+				v.first *= T(-1);
+				v.second.first = fabs(min_value);
+				v.second.second = std::distance(v.first.begin(), min_iter);
+			}
+		}
+		// swap for ordering
+		for (size_t num = 0; num < DIM; ++num) {
+			size_t pos = vectors[num].second.second;
+			if (pos != num) {
+				std::swap(vectors[num], vectors[pos]);
+				std::swap(comp[num], comp[pos]);
+			}
+		}
+
+		basis[0] = vectors[0].first[0]; basis[5] = vectors[0].first[1]; basis[4] = vectors[0].first[2];
+		basis[8] = vectors[1].first[0]; basis[1] = vectors[1].first[1]; basis[3] = vectors[1].first[2];
+		basis[7] = vectors[2].first[0]; basis[6] = vectors[2].first[1]; basis[2] = vectors[2].first[2];
+
+#ifdef _DEBUG
+		check_ort(basis);
+#endif
+		return { comp , basis };
+	}
+
+	template<typename T, size_t DIM, size_t RANK = 2>
+	std::array<container<T, DIM, 1>, DIM> slice_basis_to_vects(const tens::container<T, DIM, RANK>& basis) {
+#ifdef _DEBUG
+		if (DIM != 3)
+			throw NoImplemetationYet();
+#endif
+		std::array<container<T, DIM, 1>, DIM> vectors;
+		vectors[0] = container<T, DIM, 1>(std::array<T, DIM>{basis[0], basis[5], basis[4]});
+		vectors[1] = container<T, DIM, 1>(std::array<T, DIM>{basis[8], basis[1], basis[3]});
+		vectors[2] = container<T, DIM, 1>(std::array<T, DIM>{basis[7], basis[6], basis[2]});
+		return vectors;
 	}
 
 	template<typename T, size_t DIM, size_t LRANK, size_t RRANK>
 	[[nodiscard]] container<T, DIM, LRANK+RRANK-2> operator * (const container<T, DIM, LRANK>& lhs, const container<T, DIM, RRANK>& rhs) {
+#ifdef _DEBUG
+		if (RRANK + LRANK < 0 || RRANK < 1 || LRANK < 1) {
+			throw NoImplemetationYet();
+		}
+#endif
 		container<T, DIM, LRANK + RRANK - 2> nhs;
 		if (LRANK == 2 && RRANK == 2) {
 			math::dim3::mat_scal_mat(lhs.data(), rhs.data(), nhs.data());
-			return nhs;
 		} else 	if (LRANK == 1 && RRANK == 2) {
 			math::dim3::vect_scal_mat(lhs.data(), rhs.data(), nhs.data());
-			return nhs;
 		} else 	if (LRANK == 2 && RRANK == 1) {
 			math::dim3::mat_scal_vect(lhs.data(), rhs.data(), nhs.data());
-			return nhs;
-		}else if (LRANK == 1 && RRANK == 1) {
-			nhs[0] = math::dim3::vect_scal_vect(lhs.data(), rhs.data());
-			return nhs;
 		}
-		throw NoImplemetationYet();
-	}	
+#ifdef _DEBUG
+		else {
+			throw NoImplemetationYet();
+		}
+#endif
+		return nhs;
+	}
+	template<typename T, size_t DIM, size_t LRANK = 1, size_t RRANK = 1>
+	[[nodiscard]] container<T, 1, 0> operator * (const container<T, DIM, 1>& lhs, const container<T, DIM, 1>& rhs) {
+		container<T, 1, LRANK + RRANK - 2> scalar;
+		scalar[0] = math::dim3::vect_scal_vect(lhs.data(), rhs.data());
+		return scalar;
+	}
 
 	template<typename T, size_t DIM, size_t RANK>
 	std::ostream& operator<<(std::ostream& out, const container<T, DIM, RANK>& cont) {
+		size_t size = cont.size();
 		out << "{ ";
-		for (size_t row = 0; row < cont.size() - 1; row++) 
+		for (size_t row = 0; row < size - 1; row++)
 			out << cont[row] << ", ";
 		out << cont[cont.size() - 1] << " }";
 		return out;
