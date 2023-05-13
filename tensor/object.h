@@ -10,7 +10,7 @@ namespace tens {
 	std::ostream& operator<< (std::ostream& o, const object<T, DIM, RANK>& b);
 
 	template<typename T, size_t DIM, size_t RANK = 2>
-	object<T, DIM, RANK> Tensor(const container<T, DIM, RANK>& m, const std::shared_ptr<const container<T, DIM, 2>>& _basis) {
+	object<T, DIM, RANK> Tensor(const container<T, DIM, RANK>& m, const Basis<T,DIM>& _basis) {
 		if (RANK != 2) {
 			throw new NoImplemetationYet();
 		}
@@ -23,17 +23,17 @@ namespace tens {
 	}
 
 	template<typename T, size_t DIM, size_t RANK = 2>
-	object<T, DIM, 2> Tensor(const std::array<std::array<T, DIM>, DIM>& m, const std::shared_ptr<const container<T, DIM, 2>>& _basis) {
+	object<T, DIM, 2> Tensor(const std::array<std::array<T, DIM>, DIM>& m, const Basis<T,DIM>& _basis) {
 		return object<T, DIM, RANK>(Matrix<T, DIM>(m), _basis);
 	}
 
 	template<typename T, size_t DIM, size_t RANK = 1>
-	object<T, DIM, RANK> Vector(const std::array<T, DIM>& _arr, const std::shared_ptr<const container<T, DIM, 2>>& _basis) {
+	object<T, DIM, RANK> Vector(const std::array<T, DIM>& _arr, const Basis<T,DIM>& _basis) {
 		return object<T, DIM, 1>(Array<T, DIM>(_arr), _basis);
 	}
 
 	template<typename T, size_t DIM, size_t RANK = 1>
-	object<T, DIM, RANK> Vector(const container<T, DIM, RANK>& a, const std::shared_ptr<const container<T, DIM, 2>>& _basis) {
+	object<T, DIM, RANK> Vector(const container<T, DIM, RANK>& a, const Basis<T,DIM>& _basis) {
 		if (RANK != 1) {
 			throw new NoImplemetationYet();
 		}
@@ -121,6 +121,9 @@ namespace tens {
 		container<T, DIM, RANK>& comp() {
 			return *this->_comp;
 		}
+		Basis<T, DIM>& basis() {
+			return this->_basis;
+		}
 	public:
 		bool is_empty() {
 			return _comp == nullptr;
@@ -133,9 +136,14 @@ namespace tens {
 			_move(std::move(basis_obj));
 		}
 
-		object(size_t N, size_t R = 0, FILL_TYPE type = FILL_TYPE::ZERO, const Basis<T, DIM>& pbasis = EMPTY_BASIS<T, DIM>) {
-			_comp = std::make_unique<container<T, DIM, RANK>>(container<T, DIM, RANK>(N, R, type));
-			if (R > 0) { _basis = pbasis; }
+		object(FILL_TYPE type, Basis<T, DIM>&& pbasis) {
+			_comp = std::make_unique<container<T, DIM, RANK>>(container<T, DIM, RANK>(type));
+			_basis = std::move(pbasis);
+		}
+
+		object(FILL_TYPE type = FILL_TYPE::ZERO, const Basis<T, DIM>& pbasis = EMPTY_BASIS<T, DIM>) {
+			_comp = std::make_unique<container<T, DIM, RANK>>(container<T, DIM, RANK>(type));
+			if (RANK > 0) { _basis = pbasis; }
 		}
 
 		object(const container<T, DIM, RANK>& comp, const Basis<T, DIM>& pbasis = EMPTY_BASIS<T, DIM>) {
@@ -146,7 +154,7 @@ namespace tens {
 		object(const container<T, DIM, RANK>& comp, Basis<T, DIM>&& pbasis = EMPTY_BASIS<T, DIM>) {
 			_comp = std::make_unique<container<T, DIM, RANK>>(comp);
 			if (RANK > 0) {
-				std::move(pbasis); 
+				_basis = std::move(pbasis);
 			} else {
 				pbasis.reset();
 			}
@@ -157,10 +165,10 @@ namespace tens {
 			if (RANK > 0) { _basis = pbasis; }
 		}
 		
-		object(container<T, DIM, RANK>&& comp, Basis<T, DIM>&& pbasis = EMPTY_BASIS<T, DIM>) {
+		object(container<T, DIM, RANK>&& comp, Basis<T, DIM>&& pbasis = EMPTY_BASIS<T, DIM>) noexcept {
 			_comp = std::make_unique<container<T, DIM, RANK>>(std::move(comp));
 			if (RANK > 0) {
-				std::move(pbasis); 
+				_basis = std::move(pbasis); 
 			} else {
 				pbasis.reset();
 			}
@@ -174,6 +182,23 @@ namespace tens {
 			*_comp = get_comp_at_basis(pbasis);
 			_reset_basis(pbasis);
 		}
+
+		void recalc_eigen_basis() {
+			recalc_basis(GLOBAL_BASIS<T, DIM>);
+			const auto eig = eigen(this->comp());
+			*this->_comp = eig.first;
+			*this->_basis = eig.second;
+		}
+
+		void recalc_basis(const object<T, DIM, RANK>& obj) {
+			recalc_basis(obj.get_basis_ref());
+		}
+
+		void recalc_basis(const Basis<T, DIM>& pbasis) {
+			*_comp = get_comp_at_basis(pbasis);
+			*_basis = *pbasis;
+		}
+
 
 		container<T, DIM, RANK> get_comp_at_basis(const object<T, DIM, RANK>& obj) const {
 			return get_comp_at_basis(obj.get_basis_ref());
@@ -263,10 +288,6 @@ namespace tens {
 		}
 
 		friend bool check_ort(const container<T, DIM, RANK>& m);
-
-		//static friend object<T, DIM, LRANK+RRANK-2> operator * <> (const object<T, DIM, LRANK>& lhs, const object<T, DIM, RRANK>& rhs);
-
-
 		static friend object<T, DIM, RANK> operator + <> (const object<T, DIM, RANK>& lhs, const object<T, DIM, RANK>& rhs);
 		static friend object<T, DIM, RANK> operator - <> (const object<T, DIM, RANK>& lhs, const object<T, DIM, RANK>& rhs);
 		static friend object<T, DIM, RANK> operator * <> (const object<T, DIM, RANK>& lhs, const T& mul);
@@ -317,7 +338,7 @@ namespace tens {
 	container<T, DIM, RANK> func(const tens::container<T, DIM, RANK>& M, T(&f)(T)) {
 		auto p = eigen(M);
 		const size_t size = M.size();
-		for (size_t i = 0; i < size; i++)
+		for (size_t i = 0; i < DIM; i++)
 			p.first[i] = f(p.first[i]);
 		auto obj = object<T, DIM, RANK>(p.first, p.second);
 		obj.change_basis(GLOBAL_BASIS<T, DIM>);
@@ -357,7 +378,7 @@ namespace tens {
 
 	template<typename T, size_t DIM, size_t RANK = 2>
 	static Basis<T, DIM, RANK> create_basis(DEFAULT_ORTH_BASIS type = DEFAULT_ORTH_BASIS::INDENT) {
-		return std::make_shared<const container<T, DIM, RANK>>(create_orthogonal_matrix<T, DIM>(type));
+		return std::make_shared<container<T, DIM, RANK>>(create_orthogonal_matrix<T, DIM>(type));
 	}
 
 	template<typename T, size_t DIM, size_t RANK = 2>
@@ -443,4 +464,8 @@ namespace tens {
 		out << cont[cont.size() - 1] << " } \n";
 		return out;
 	};
+
+
+	template <typename T> using T3x3 = tens::object<T, 3, 2>;
+	template <typename T, size_t N> using TNxN = tens::object<T, N, 2>;
 };

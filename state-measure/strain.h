@@ -10,15 +10,15 @@ namespace measure {
 
 		// Deformation gradient tensor
 		// see https://en.wikipedia.org/wiki/Finite_strain_theory for more information
-		template<typename T, size_t DIM = 3>
+		template<typename T>
 		class GradDeform : public StateMeasureSchema<T, 3, 2> {
-			const std::shared_ptr<tens::container<T, 3, 2>> E;  //  (Ft*F-I)/2
-			const std::shared_ptr<tens::container<T, 3, 2>> dE; //  dE/dt = Ft*(L+Lt)*F/2
+			const std::unique_ptr<tens::M3x3<T>> E;  //  (Ft*F-I)/2
+			const std::unique_ptr<tens::M3x3<T>> dE; //  dE/dt = Ft*(L+Lt)*F/2
 		public:
-			GradDeform(MaterialPoint<T, DIM>& state, measure::type_schema type_schema, const std::string& name = DEFORM_GRADIENT) :
-				StateMeasureSchema<T, DIM, 2>(state, name, tens::FILL_TYPE::INDENT, type_schema),
-				 E(std::make_shared<tens::container<T, DIM, 2>>(tens::FILL_TYPE::ZERO)),
-				dE(std::make_shared<tens::container<T, DIM, 2>>(tens::FILL_TYPE::ZERO)) {};
+			GradDeform(MaterialPoint<T, 3>& state, measure::type_schema type_schema, const std::string& name = DEFORM_GRADIENT) :
+				StateMeasureSchema<T, 3, 2>(state, name, tens::FILL_TYPE::INDENT, type_schema),
+				 E(std::make_unique<tens::M3x3<T>>(tens::FILL_TYPE::ZERO)),
+				dE(std::make_unique<tens::M3x3<T>>(tens::FILL_TYPE::ZERO)) {};
 
 			// calc a new value F
 			virtual void integrate_value(T dt) override {
@@ -52,35 +52,49 @@ namespace measure {
 				return std::sqrt(2 * convolution_transp(E, E) / 3);
 			}
 
-			std::pair<tens::container<T, 3, 2>, tens::container<T, 3, 2>> polar_decomposition() const {
+			std::pair<tens::M3x3<T>, tens::M3x3<T>> polar_decomposition() const {
 				const auto& F = this->value();
 				auto V = left_stretch_tensor(); 
 				auto R = F * V.inverse();
 				return { V, R };
 			};
 
+			// ---------------------------------- strain(rate) measures ----------------------------------------
+			tens::T3x3<T> rate_deformation_tensor() const {
+				auto L = this->rate();
+				return tens::object<T, 3, 2>(L.symmetrize(), this->get_basis_ref());
+			}
+
 			// The right Cauchy–Green deformation tensor, Ft.F
-			tens::container<T, 3, 2> right_cauchy_green() const {
+			tens::M3x3<T> right_cauchy_green() const {
 				const auto& F = this->value();
 				return F * F.transpose();
 			}
 			// V the right stretch tensor
-			tens::container<T, 3, 2> left_stretch_tensor() const {
+			tens::M3x3<T> left_stretch_tensor() const {
 				return func(right_cauchy_green(), std::sqrt); // sqrt(F.Ft)
+			}
+			// The right Hencky deformation tensor, ln(Ft.F)/2 = ln(V)
+			tens::M3x3<T> right_hencky() const {
+				return func(right_cauchy_green(), std::log)*= T(0.5); // ln(F.Ft)/2
 			}
 
 			// The left Cauchy–Green deformation tensor, F.Ft
-			tens::container<T, 3, 2> left_cauchy_green() {
+			tens::M3x3<T> left_cauchy_green() {
 				const auto& F = this->value();
 				return F.transpose() * F;
 			}
 			// U the left stretch tensor
-			tens::container<T, 3, 2> right_stretch_tensor() const {
+			tens::M3x3<T> right_stretch_tensor() const {
 				return func(left_cauchy_green(), std::sqrt); // sqrt(Ft.F)
+			}
+			// The left Hencky deformation tensor, ln(Ft.F)/2 = ln(U)
+			tens::M3x3<T> left_hencky() const {
+				return func(left_cauchy_green(), std::log) *= T(0.5); // ln(Ft.F)/2
 			}
 
 			//  (Ft*F-I)/2
-			const tens::container<T, 3, 2>& lagrangian_strain_tensor() const {
+			const tens::M3x3<T>& lagrangian_strain_tensor() const {
 				const auto& F = this->value();
 				*E = F.transpose() * F; // F.Ft
 				*E -= IDENT_MATRIX<T, 3>;
@@ -88,7 +102,7 @@ namespace measure {
 			}
 		
 			//  dE/dt = Ft*(L+Lt)*F/2
-			const tens::container<T, 3, 2>& lagrangian_strain_rate_tensor() const {
+			const tens::M3x3<T>& lagrangian_strain_rate_tensor() const {
 				const auto& F = this->value();
 				*dE = F.transpose();
 				*dE *= (this->rate().symmetrize() *= F);
@@ -103,42 +117,5 @@ namespace measure {
 			out << m.name() << ": value = " << m.value() << ", rate = " << m.rate();
 			return out; 
 		};
-		/*
-		const std::string DEFORM_GRADIENT_INELAST = "F_in";
-		const std::string DEFORM_GRADIENT_ELAST = "F_e";
-		template<typename T = double>
-		class GradDeformElast : public GradDeform<T> {
-			//const GradDeform<T>& F;
-			//const GradDeform<T>& F_in;
-		public:
-			GradDeformElast(State<T>& state) : 
-				GradDeform<T>(state, DEFORM_GRADIENT_ELAST)//,
-				//F(static_cast<const GradDeform<T>&>((*this)[measure::strain::DEFORM_GRADIENT])),
-				//F_in(static_cast<const GradDeform<T>&>((*this)[measure::strain::DEFORM_GRADIENT_INELAST]))
-			  {};
-			// assignment a new rate L
-			virtual void rate_equation(T t, T dt) override;
-
-			// assignment a new value F 
-			virtual void finite_equation(T t, T dt) override;
-		};
-
-		template<typename T = double>
-		class GradDeformInelast : public GradDeform<T> {
-			//const GradDeform<T>& F;
-			//const measure::Stress<T>& S;
-		public:
-			GradDeformInelast(State<T>& state) :
-				GradDeform<T>(state, DEFORM_GRADIENT_INELAST)//,
-				//F(static_cast<const GradDeform<T>&>((*this)[measure::strain::DEFORM_GRADIENT])),
-				//S(static_cast<const measure::Stress<T>&>((*this)[measure::stress::CAUCHY]))
-			{};
-			// assignment a new rate L 
-			virtual void rate_equation(T t, T dt) override;
-
-			// assignment a new value F 
-			virtual void finite_equation(T t, T dt) override;
-		};
-		*/
 	};
 };

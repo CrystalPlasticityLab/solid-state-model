@@ -220,7 +220,7 @@ namespace tens {
 		}
 
 		[[nodiscard]] inline friend container<T, DIM, RANK> operator * (const T& mul, const container<T, DIM, RANK>& rhs) {
-			return container<T, DIM, RANK>::operator*(rhs, mul);
+			return rhs * mul;
 		}
 
 		container& operator += (const container& rhs) {
@@ -356,6 +356,19 @@ namespace tens {
 			}
 			throw NoImplemetationYet();
 		}
+
+		friend static void normalize(container<T, DIM, RANK>& m) {
+			if (RANK == 1) {
+				m /= m.get_norm();
+				return;
+			}
+			throw NoImplemetationYet();
+		}
+
+		friend static void symmetrize(container<T, DIM, RANK>& m) {
+			m = m.symmetrize();
+		}
+
 		// lhs : rhsT
 		friend T convolution_transp(const container<T, DIM, RANK>& lhs, const container<T, DIM, RANK>& rhs) {
 			if (RANK == 2 && DIM == 3) {
@@ -493,14 +506,17 @@ namespace tens {
 		out << cont[cont.size() - 1] << " }";
 		return out;
 	};
+
+	template <typename T>  using M3x3 = tens::container<T, 3, 2>;
+	template <typename T, size_t N>  using MNxN = tens::container<T, N, 2>;
 }
 
 
 template <typename T, size_t DIM, size_t RANK = 2>
-using Basis = std::shared_ptr<const tens::container<T, DIM, RANK>>;
+using Basis = std::shared_ptr<tens::container<T, DIM, RANK>>;
 
 template<typename T, size_t DIM, size_t RANK = 2>
-extern const Basis<T, DIM, RANK> GLOBAL_BASIS = std::make_shared<const tens::container<T, DIM, RANK>>(tens::FILL_TYPE::INDENT);
+extern const Basis<T, DIM, RANK> GLOBAL_BASIS = std::make_shared<tens::container<T, DIM, RANK>>(tens::FILL_TYPE::INDENT);
 template<typename T, size_t DIM>
 extern const tens::container<T, DIM, 2> IDENT_MATRIX = tens::container<T, DIM, 2>(tens::FILL_TYPE::INDENT);
 template<typename T, size_t DIM>

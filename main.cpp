@@ -1,4 +1,8 @@
 #pragma once
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <filesystem>
 #include "tensor/test/expect.h"
 #include "tensor/test/test.h"
 #include "tensor/object.h"
@@ -38,7 +42,7 @@ int main()
 		using namespace tens;
 		const auto qwew = container<double, 30, 1>(0.0);
 		//func(qwew, sqrt);
-		run_test();
+//		run_test();
 		//const auto yy = container<double>(30, 2, std::move(std::unique_ptr<double>(arr)));
 		//const auto xx = container<double>(30, 0);
 		//auto scalar = container<double>(1, 1, 0.4534535);
@@ -61,7 +65,7 @@ int main()
 		auto v3 = v1;
 		auto v5 = std::move(v1);
 		auto v4 = Vector<double, 3>(a3, b2);
-		auto t1 = Tensor<double, 3>(m1, b2);
+		auto t1 = T3x3<double>(m1, b2);
 		auto t2 = Tensor<double, 3>(m2, b2);
 		auto t3 = Tensor<double, 3>(m1, b1);
 
@@ -74,51 +78,15 @@ int main()
 		auto tvres2 = v4 * t1;
 		t1 = t2 * t2;
 		t1 = t2 * 2.0;
-		
-		Json::Value params;
-		
-		{
-			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto elasticity = model::Elasticity<strain::GradDeform>(params, measure::type_schema::RATE_CALCULATE);
-			std::cout << elasticity;
-			for (size_t i = 0; i < 10000; i++) {
-				elasticity.step(1e-5);
-			}
-			std::cout << "Result of hypoelasic model \n";
-			std::cout << elasticity;
+
+		std::string file_path = "../models/param/plasticity.json";
+		auto model = model::ModelFactory<model::Elasticity>::create<strain::GradDeform, stress::CaushyStress>(file_path, measure::type_schema::RATE_CALCULATE);
+		std::cout << *model;
+		for (size_t i = 0; i < 10000; i++) {
+			model->step(1e-5);
 		}
-		{
-			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto elasticity = model::Elasticity<strain::GradDeform>(params, measure::type_schema::FINITE_CALCULATE);
-			std::cout << elasticity;
-			for (size_t i = 0; i < 10000; i++) {
-				elasticity.step(1e-5);
-			}
-			std::cout << "Result of hyperelasic model \n";
-			std::cout << elasticity;
-		}
-		{
-			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto plasticity = model::Plasticity<strain::GradDeform, stress::CaushyStress>(params, measure::type_schema::RATE_CALCULATE);
-			std::cout << plasticity;
-			for (size_t i = 0; i < 10000; i++) {
-				plasticity.step(1e-5);
-			}
-			std::cout << "Result of hypoplastic model \n";
-			std::cout << plasticity;
-		}/*
-		{
-			auto Q = create_basis<double, 3>(DEFAULT_ORTH_BASIS::RANDOM);
-			auto plasticity = model::Plasticity<strain::GradDeform, stress::CaushyStress>(params, measure::type_schema::FINITE_CALCULATE);
-			std::cout << plasticity;
-			for (size_t i = 0; i < 10000; i++) {
-				plasticity.step(1e-5);
-				//if (i > 9000)
-				//std::cout << plasticity;
-			}
-			std::cout << "Result of hyperplastic model \n";
-			std::cout << plasticity;
-		}*/
+		std::cout << "Result of hyperelasic model \n";
+		std::cout << *model;
 	}
 	return 0;
 }

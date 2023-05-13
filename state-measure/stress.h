@@ -15,10 +15,11 @@ namespace measure {
 	namespace stress {
 		const std::string CAUCHY = "S";
 
-		template<typename T, size_t DIM = 3>
-		class CaushyStress : public Stress<T> {
+		template<typename T>
+		class CaushyStress : public StateMeasureSchema<T, 3, 2> {
 		public:
-			CaushyStress(MaterialPoint<T, DIM>& state, measure::type_schema type_schema) : Stress<T>(state, type_schema, CAUCHY) {};
+			CaushyStress(MaterialPoint<T, 3>& state, measure::type_schema type_schema) : 
+				StateMeasureSchema<T, 3, 2>(state, CAUCHY, tens::FILL_TYPE::INDENT, type_schema) {};
 
 			// evolution equation in rate form
 			virtual void rate_equation(T t, T dt) override {}

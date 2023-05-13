@@ -18,13 +18,12 @@ namespace state {
 	class MaterialPoint : public AbstractSchema<T> {
 		Basis<T, DIM> _basis;
 	protected:
-		std::shared_ptr<Json::Value> _params;
-		virtual void parse_json_params(const Json::Value& params) {};
+		std::shared_ptr<json> _params;
 	public:
 		virtual void init() override {};
 		virtual void calc(T dt) override {};
 		virtual void finalize()  override {};
-		MaterialPoint(const Json::Value& params, measure::type_schema type) :
+		MaterialPoint(const json& params, measure::type_schema type) :
 			_basis(tens::create_basis<T, 3>(tens::DEFAULT_ORTH_BASIS::RANDOM))
 		{
 		};
@@ -32,7 +31,7 @@ namespace state {
 			return _basis;
 		}
 
-		const std::shared_ptr<const Json::Value>& param() const {
+		const std::shared_ptr<const json>& param() const {
 			return _params;
 		}
 		template<typename T, size_t DIM>

@@ -13,26 +13,25 @@ namespace model {
 			- StressMeasure - specific stress measure
 	*/
 	template<
-		template<class> class StrainMeasure = strain::GradDeform, 
-		template<class> class StressMeasure = stress::CaushyStress, class T = double>
+		template<typename T> class StrainMeasure,
+		template<typename T> class StressMeasure, typename T>
 	class Elasticity : public MaterialPoint<T, 3> {
 	protected:
 		std::shared_ptr<StrainMeasure<T>> F;
 		std::shared_ptr<StressMeasure<T>> S;
-		void parse_json_params(const Json::Value& params) {
-			MaterialPoint<T, 3>::parse_json_params(params);
-		}
 
 		void reset_elastic_strain_measure(std::shared_ptr<const StrainMeasure<T>> new_F) {
 			static_cast<ElasticRelation<StressMeasure, StrainMeasure, T>&>(*S).reset_elastic_strain_measure(new_F);
 		}
 	public:
-		Elasticity(const Json::Value& params, measure::type_schema type) : 
+		Elasticity(const json& params, measure::type_schema type) : 
 			MaterialPoint<T, 3>(params, type),
 			F(std::make_shared<StrainMeasure<T>>(*this, type)),
-			S(std::make_shared<ElasticRelation<StressMeasure, StrainMeasure, T>>(type, *this, this->F))
+			S(std::make_shared<ElasticRelation<StressMeasure, StrainMeasure, T>>(
+				type, *this, this->F, 
+				params["elast_modulus"].get<std::array<T, 9>>()) 
+			)
 		{
-			parse_json_params(params);
 		};
 
 		virtual void calc(T dt) override {
@@ -51,15 +50,18 @@ namespace model {
 namespace measure {
 	namespace strain {
 		// assignment a new rate L
-		template<typename T, size_t DIM>
-		void measure::strain::GradDeform<T, DIM>::rate_equation(T t, T dt) {
+		template<typename T>
+		void measure::strain::GradDeform<T>::rate_equation(T t, T dt) {
 			auto& L = this->rate_temp;
-			L.fill_value(tens::FILL_TYPE::INDENT);
+			L.fill_value(tens::FILL_TYPE::ZERO);
+			L[0] = 2;
+			L[1] = -1;
+			L[2] = -1;
 		}
 
 		// assignment a new value F 
-		template<typename T, size_t DIM>
-		void measure::strain::GradDeform<T, DIM>::finite_equation(T t, T dt) {
+		template<typename T>
+		void measure::strain::GradDeform<T>::finite_equation(T t, T dt) {
 			auto& F = this->value_temp;
 			F.fill_value(tens::FILL_TYPE::INDENT);
 			F *= T(1) + t;

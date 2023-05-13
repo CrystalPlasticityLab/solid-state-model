@@ -1,5 +1,6 @@
 #pragma once
-#include "../json/json/json.h"
+#include "single_include/nlohmann/json.hpp"
+using json = nlohmann::json;
 
 namespace state {
 	template<class T, size_t DIM>
@@ -198,7 +199,7 @@ namespace measure {
 			return **(*_state.get())[name];
 		}
 
-		const std::shared_ptr<const Json::Value>& param() const {
+		const std::shared_ptr<const json>& param() const {
 			return _state.param();
 		}
 	};
