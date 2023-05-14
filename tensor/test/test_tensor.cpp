@@ -1,20 +1,28 @@
 #include "test.h"
 
-double forward(double x) {
+double forward_pow_3(double x) {
     return x * x * x;
 };
-double backward(double x) {
+double backward_root_3(double x) {
     if (x < 0)
         return -pow(-x, 0.333333333333333333);
     else
         return pow(x, 0.333333333333333333);
 };
 
+double forward_exp(double x) {
+    return exp(x);
+};
+double backward_log(double x) {
+    return log(x);
+};
+
+
 void test_tensor(){
     using namespace tens;
 
     std::cout << " =================== Start testing Tensor ===================" << std::endl;
-    const auto gl = GLOBAL_BASIS<double>;
+    const auto gl = GLOBAL_BASIS<double, 3>;
     int all_tests = 0;
     int pass_tests = 0;
     const auto m_I = Matrix<double, 3>(FILL_TYPE::INDENT);
@@ -142,41 +150,44 @@ void test_tensor(){
         all_tests++;
     }
     {
-        const auto sm = container<double>(3, 2, FILL_TYPE::RANDOMSYMM);
-        const auto ref_obj = object<double>(sm, gl);
+        const auto sm = container<double, 3, 2>(FILL_TYPE::RANDOMSYMM);
+        const auto ref_obj = object<double, 3, 2>(sm, gl);
         const auto eig_obj = eigen_object(sm);
         pass_tests += expect((ref_obj == eig_obj), "eigen test");
         all_tests++;
     }
     {
-        auto I2 = IDENT_MATRIX<double> * 2.0;
-
-        auto I2sqrt = func(I2, sqrt) - (IDENT_MATRIX<double> * sqrt(2.0));
-        auto err = I2sqrt.trace();
-        pass_tests += expect(math::is_small_value(err), "func of matrix test #1");
+        const tens::container<double, 3, 2> M(std::array<double, 9>{1, 2, 3, 1, -1, 0, 1, -1, 0});
+        const auto ei = tens::eigen(M);
+        const auto v = tens::slice_basis_to_vects(ei.second);
+        std::array<double, 9> eig_values{ 0.46791111376204864, 1.6527036446661403, 3.8793852415718164 , 0, 0, 0, 0, 0, 0 };
+        std::array<double, 3> v0{ 0.844029628745986, -0.29312841385727106, 0.44909878511128654 };
+        std::array<double, 3> v1{ 0.4490987851112859, 0.8440296287459856, -0.2931284138572726 };
+        std::array<double, 3> v2{ -0.29312841385727223, 0.44909878511128665, 0.8440296287459854 };
+        std::array<std::array<double, 3>, 3> eig_vectors{ v0, v1, v2 };
+        double err = 0;
+        for (size_t i = 0; i < 3; i++) {
+            err += (v[i] - eig_vectors[i]).get_norm();
+            err += fabs(eig_values[i] - ei.first[i]);
+        }
+        pass_tests += expect(math::is_small_value(err), "eigen test");
         all_tests++;
     }
     {
-        // TODO: check accuracy of eigen
-        // auto m1sqrt = func(m1, forward);
-        // auto m1log = func(m1sqrt, backward);
-        // auto err = (m1- m1log);
-        // std::cout << m1;
-        // std::cout << m1sqrt;
-        // std::cout << m1log;
-        // pass_tests += expect(err == m_zero, "func of matrix test #2");
-        // all_tests++;
+        auto I2 = IDENT_MATRIX<double, 3> * 2.0;
+
+        auto I2sqrt = func(I2, sqrt) - (IDENT_MATRIX<double, 3> * sqrt(2.0));
+        auto err = I2sqrt.trace();
+        pass_tests += expect(math::is_small_value(err), "func of matrix test");
+        all_tests++;
     }
-    
-   //{
-   //    auto tr1 = t11;
-   //    //tr1.move_to_basis(basis2);
-   //    pass_tests += expect(!(t11 == tr1), "Tensor has not changed after changing basis");
-   //    all_tests++;
-   //    //tr1.move_to_basis(basis1);
-   //    pass_tests += expect((t11 == tr1), "Tensor has changed after changing basis to the origin basis");
-   //    all_tests++;
-   //}
+    {
+        const tens::container<double, 3, 2> M(std::array<double, 9>{-2.7635, 2, 3, 1, -1, 0.123, 1, -1, 0.123});
+        auto m1sqrt = func(M, forward_pow_3);
+        auto m1sqr = func(m1sqrt, backward_root_3);
+        pass_tests += expect((M - m1sqr) == m_zero, "eigen+func (sqr->sqrt) of matrix test");
+        all_tests++;
+    }
     
     std::cout << " Test passed : " << std::to_string(pass_tests) << "/" << std::to_string(all_tests) << std::endl;
     std::cout << " ==================== End Testing Tensor ====================" << std::endl;

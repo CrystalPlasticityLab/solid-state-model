@@ -34,6 +34,21 @@ namespace math {
 		}
 
 		template<typename T>
+		inline T mat_conv_transp(const T* lhs, const T* rhs) {
+			T res(0);
+			res += lhs[0] * rhs[0];
+			res += lhs[1] * rhs[1];
+			res += lhs[2] * rhs[2];
+			res += lhs[3] * rhs[6];
+			res += lhs[4] * rhs[7];
+			res += lhs[5] * rhs[8];
+			res += lhs[6] * rhs[3];
+			res += lhs[7] * rhs[4];
+			res += lhs[8] * rhs[5];
+			return res;
+		}
+
+		template<typename T>
 		inline void mat_scal_vect(const T* m, const T* a, T* nhs) {
 			nhs[0] = a[0] * m[0] + a[2] * m[4] + a[1] * m[5];
 			nhs[1] = a[1] * m[1] + a[2] * m[3] + a[0] * m[8];

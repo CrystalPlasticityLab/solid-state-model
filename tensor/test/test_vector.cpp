@@ -90,13 +90,13 @@ void test_vector(){
         all_tests++;
     }
     {
-        object<double> vr1 = v11;
+        object<double, 3 , 1> vr1 = v11;
         vr1.change_basis(v21);
         pass_tests += expect((v11 == vr1), "Vector has not changed after changing basis");
         all_tests++;
     }
     {
-        object<double> vr1 = v11;
+        object<double, 3, 1> vr1 = v11;
         vr1.change_basis(v21);
         pass_tests += expect((a1 == vr1.get_comp_at_basis(v11)), "component has not changed at the same basis");
         all_tests++;

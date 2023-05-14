@@ -1,0 +1,7 @@
+{
+		"density": 7800,
+		"elast_modulus": [
+			210e3,
+			81e3
+		]
+}
