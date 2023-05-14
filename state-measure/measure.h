@@ -7,9 +7,6 @@ namespace state {
 	class MaterialPoint;
 };
 
-namespace numerical_schema {
-}
-
 namespace measure {
 	using namespace state;
 
@@ -210,7 +207,7 @@ namespace measure {
 	protected:
 		const measure::type_schema _type;
 	public:
-		StateMeasureSchema(MaterialPoint<T, DIM>& state, std::string name, tens::FILL_TYPE type, measure::type_schema type_schema = measure::type_schema::RATE_CALCULATE) :
+		StateMeasureSchema(MaterialPoint<T, DIM>& state, std::string name, tens::FILL_TYPE type, measure::type_schema type_schema) :
 			StateMeasure<T, DIM, RANK>(state, name, type),
 			Schema<T>(),
 			measure(*this),

@@ -1,5 +1,6 @@
 #pragma once
 #include "../state-measure/state.h"
+#include "./helpers/model_utils.h"
 
 namespace model {
 	using namespace state;
@@ -8,6 +9,12 @@ namespace model {
 	// binary relatoin G(x) : S(F)
 	template<template<class> class StressMeasure, template<class> class StrainMeasure, typename T>
 	class ElasticRelation : public StressMeasure<T> {
+	private:
+		void set_elast_modules_l_mu(T l, T mu) {
+			c[0] = c[1] = c[2] = l + 2 * mu;
+			c[3] = c[4] = c[5] = l;
+			c[6] = c[7] = c[8] = 2 * mu;
+		}
 	protected:
 		std::shared_ptr<const StrainMeasure<T>> F_e;
 		std::array<T, 9> c;
@@ -28,11 +35,13 @@ namespace model {
 		}
 	public:
 		ElasticRelation(measure::type_schema type, MaterialPoint<T, 3>& state, 
-			const std::shared_ptr<const StrainMeasure<T>>& _F_e, const std::array<T, 9>& _c) :
+			const std::shared_ptr<const StrainMeasure<T>>& _F_e, const std::array<T, 2>& _c) :
 			StressMeasure<T>(state, type), 
 			F_e(_F_e),
-			c(_c)
-		{};
+			c{T(0)}
+		{
+			set_elast_modules_l_mu(_c[0], _c[1]);
+		};
 
 		void reset_elastic_strain_measure(std::shared_ptr<const StrainMeasure<T>>& new_F_e) {
 			F_e.reset();
@@ -54,35 +63,42 @@ namespace model {
 	protected:
 		std::shared_ptr<const StressMeasure<T>> S;
 		std::shared_ptr<const StrainMeasure<T>> F;
+		const Curve<T> curve;
+		const T mu;
+		const T flow_treshold;
 	public:
 		PlasticRelation(measure::type_schema type, MaterialPoint<T, 3>& state, 
 			const std::shared_ptr<const StressMeasure<T>> _S, 
-			const std::shared_ptr<const StrainMeasure<T>> _F) :
+			const std::shared_ptr<const StrainMeasure<T>> _F,
+			const std::vector<std::pair<T, T>>& _curve, T _mu, T _flow_treshold) :
 			StrainMeasure<T>(state, type, "F_in"),
-			S(_S),
-			F(_F)
-		{};
+			S(_S), F(_F), curve(_curve), mu(_mu), flow_treshold(_flow_treshold)
+		{
+		};
 
 		virtual void rate_equation(T t, T dt) override {
-			const auto& L = F->rate();
-			auto iS = S->value_intensity();
-			auto& L_in = this->rate_temp = L;
-			T threshold = 0.014;
-			iS > threshold ? L_in : L_in *= (iS / threshold);
+			const auto& L = this->F->rate();
+			const auto iS = S->value_intensity();
+			auto& L_in = this->rate_temp;
+			if (iS < flow_treshold) {
+				L_in.fill(0);
+			} else {
+				L_in = L;
+				const auto iE = this->F->value_intensity();
+				const T plastic_part = curve.value(iE);
+				L_in *= plastic_part;
+			}
 		};
 
 		virtual void finite_equation(T t, T dt) override {
 			const auto& F = this->F->value();
-			auto iS = S->value_intensity();
-			auto& F_in = this->value_temp;// = F;
-			T threshold = 0.014;
-			if (iS > threshold) {
-				F_in = F;
-			} else {
-				F_in = (this->value() * 90.0 + IDENT_MATRIX<T, 3> + F * (iS / threshold))/91.0;
-				//F_in = tens::func(IDENT_MATRIX<T> + F * (iS / threshold), sqrt);
+			const auto iS = S->value_intensity();
+			auto& F_in = this->value_temp = I3x3<T>;
+			if (iS > flow_treshold) {
+				const auto iE = this->F->value_intensity();
+				const T plastic_part = curve.value(iE);
+				F_in += (F - I3x3<T>) * plastic_part;
 			}
-			//iS > threshold ? F_in : F_in = IDENT_MATRIX<T> + (F - IDENT_MATRIX<T>) * (iS / threshold);
 		};
 	};
 

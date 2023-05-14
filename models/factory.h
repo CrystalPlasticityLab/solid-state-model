@@ -30,12 +30,10 @@ namespace model {
 						jsonString = std::string((std::istreambuf_iterator<char>(filematerial)), std::istreambuf_iterator<char>());
 						try {
 							params = json::parse(jsonString);
-						}
-						catch (const std::exception& e) {
+						} catch (const std::exception& e) {
 							throw std::ifstream::failure("Failed during parsing json: " + param_json_file + " \n Reason: " + std::string(e.what()));
 						}
-					}
-					catch (const std::exception& e) {
+					} catch (const std::exception& e) {
 						filematerial.close();
 						throw std::ifstream::failure("Failed during reading file: " + param_json_file + " \n Reason: " + std::string(e.what()));
 					}
@@ -44,10 +42,9 @@ namespace model {
 					throw std::ios_base::failure("Failed to open file: " + param_json_file);
 				}
 				try {
-					auto result = std::make_shared<Model<StrainMeasure, StressMeasure, T>>(params, measure::type_schema::RATE_CALCULATE);
+					auto result = std::make_shared<Model<StrainMeasure, StressMeasure, T>>(params, type);
 					return result;
-				}
-				catch (const std::exception& e) {
+				} catch (const std::exception& e) {
 					throw std::runtime_error("Model creation was failed. Reason: " + std::string(e.what()));
 				}
 			} catch (const std::exception& e) {

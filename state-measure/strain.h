@@ -48,7 +48,7 @@ namespace measure {
 			}
 
 			virtual T value_intensity() const override {
-				const auto E = lagrangian_strain_tensor();
+				const auto E = right_hencky();
 				return std::sqrt(2 * convolution_transp(E, E) / 3);
 			}
 

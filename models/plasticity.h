@@ -20,17 +20,15 @@ namespace model {
 	protected:
 		std::shared_ptr<StrainMeasure<T>> F_in;
 		std::shared_ptr<StrainMeasure<T>> F_e;
-		void parse_json_params(const json& params) {
-			Elasticity<StrainMeasure, StressMeasure, T>::parse_json_params(params);
-		}
 	public:
 		Plasticity(const json& params, measure::type_schema type) :
-			Elasticity<StrainMeasure, StressMeasure, T>(params, type),
-			F_in(std::make_shared<PlasticRelation<StressMeasure, StrainMeasure, T>>(type, *this, this->S, this->F)),
-			F_e(std::make_shared<StrainDecomposition<StrainMeasure, T>>(type, *this, this->F, this->F_in))
+			Elasticity<StrainMeasure, StressMeasure, T>(params, type)
 		{
+			const auto curve = parse_json_value<std::vector<std::pair<T, T>>>("curve", params);
+			const auto treshold = parse_json_value<T>("flow_treshold", params);
+			F_in = std::make_shared<PlasticRelation<StressMeasure, StrainMeasure, T>>(type, *this, this->S, this->F, curve, this->elast_modulus[1], treshold);
+			F_e = std::make_shared<StrainDecomposition<StrainMeasure, T>>(type, *this, this->F, this->F_in);
 			this->reset_elastic_strain_measure(this->F_e); // change S(F) -> S(F_e)
-			parse_json_params(params);
 		};
 
 		virtual void calc(T dt) override {

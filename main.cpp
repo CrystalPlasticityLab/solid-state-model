@@ -80,10 +80,11 @@ int main()
 		t1 = t2 * 2.0;
 
 		std::string file_path = "../models/param/plasticity.json";
-		auto model = model::ModelFactory<model::Elasticity>::create<strain::GradDeform, stress::CaushyStress>(file_path, measure::type_schema::RATE_CALCULATE);
+		//auto model = model::ModelFactory<model::Elasticity>::create<strain::GradDeform, stress::CaushyStress>(file_path, measure::type_schema::RATE_CALCULATE);
+		auto model = model::ModelFactory<model::Plasticity>::create<strain::GradDeform, stress::CaushyStress>(file_path, measure::type_schema::FINITE_CALCULATE);
 		std::cout << *model;
 		for (size_t i = 0; i < 10000; i++) {
-			model->step(1e-5);
+			model->step(1e-6);
 		}
 		std::cout << "Result of hyperelasic model \n";
 		std::cout << *model;

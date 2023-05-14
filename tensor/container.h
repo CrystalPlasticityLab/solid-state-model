@@ -519,5 +519,7 @@ template<typename T, size_t DIM, size_t RANK = 2>
 extern const Basis<T, DIM, RANK> GLOBAL_BASIS = std::make_shared<tens::container<T, DIM, RANK>>(tens::FILL_TYPE::INDENT);
 template<typename T, size_t DIM>
 extern const tens::container<T, DIM, 2> IDENT_MATRIX = tens::container<T, DIM, 2>(tens::FILL_TYPE::INDENT);
+template<typename T>
+extern const tens::container<T, 3, 2> I3x3 = IDENT_MATRIX<T,3>;
 template<typename T, size_t DIM>
 extern const tens::container<T, DIM, 2> ZERO_MATRIX = tens::container<T, DIM, 2>(tens::FILL_TYPE::ZERO);

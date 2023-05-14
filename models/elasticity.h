@@ -17,21 +17,19 @@ namespace model {
 		template<typename T> class StressMeasure, typename T>
 	class Elasticity : public MaterialPoint<T, 3> {
 	protected:
+		std::array<T, 2> elast_modulus;
 		std::shared_ptr<StrainMeasure<T>> F;
 		std::shared_ptr<StressMeasure<T>> S;
-
 		void reset_elastic_strain_measure(std::shared_ptr<const StrainMeasure<T>> new_F) {
 			static_cast<ElasticRelation<StressMeasure, StrainMeasure, T>&>(*S).reset_elastic_strain_measure(new_F);
 		}
 	public:
 		Elasticity(const json& params, measure::type_schema type) : 
 			MaterialPoint<T, 3>(params, type),
-			F(std::make_shared<StrainMeasure<T>>(*this, type)),
-			S(std::make_shared<ElasticRelation<StressMeasure, StrainMeasure, T>>(
-				type, *this, this->F, 
-				params["elast_modulus"].get<std::array<T, 9>>()) 
-			)
+			F(std::make_shared<StrainMeasure<T>>(*this, type))
 		{
+			elast_modulus = parse_json_value<std::array<T, 2>>("elast_modulus", params);
+			S = std::make_shared<ElasticRelation<StressMeasure, StrainMeasure, T>>(type, *this, this->F, elast_modulus);
 		};
 
 		virtual void calc(T dt) override {
@@ -63,8 +61,9 @@ namespace measure {
 		template<typename T>
 		void measure::strain::GradDeform<T>::finite_equation(T t, T dt) {
 			auto& F = this->value_temp;
-			F.fill_value(tens::FILL_TYPE::INDENT);
-			F *= T(1) + t;
+			F.fill_value(tens::FILL_TYPE::ZERO);
+			F[0] = T(1) + t;
+			F[1] = F[2] = std::sqrt(T(1) / F[0]);
 		}; 
 	};
 };

@@ -29,12 +29,12 @@ namespace measure {
 
 			virtual T rate_intensity() const override {
 				const auto& dS = this->rate();
-				return std::sqrt(3 * convolution_transp(dS, dS) / 2);
+				return std::sqrt(1.5 * convolution_transp(dS, dS));
 			}
 
 			virtual T value_intensity() const override {
 				const auto& S = this->value();
-				return std::sqrt(3 * convolution_transp(S, S) / 2);
+				return std::sqrt(1.5 * convolution_transp(S, S));
 			}
 			template<class T>
 			friend std::ostream& operator<<(std::ostream& out, const CaushyStress<T>& m);
